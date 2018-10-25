@@ -2,23 +2,18 @@
 ###############################################################################
 # file:					findgrep.sh
 # author: 			 	John Schwartzman, Forte Systems, Inc.
-# last revision:		10/24/2018
+# last revision:		10/19/2018
 #
 # search for content in files with specific file types
 # findc, findh, findch, findcpp, findhpp, findchpp, findjava, etc.
 # are symbolic links to findgrep
 #
-# See case statement (getScript) for a list of symlinks and the 
-# file patterns they match.
-# Change dir=. (default) to dir=$PWD to show full paths (i.e., /xxx/xx
-# instead of ./xxx)
+# See case statement for a list of symlinks and the file patterns they match.
+# Change dir=. to dir=$PWD to show full paths
 #
-# Built on Wed Oct 24 21:26:25 EDT 2018 for OSTYPE = linux-gnu.
+# Built on Fri Oct 19 23:26:39 EDT 2018 for OSTYPE = linux-gnu.
 # The variables findCmd, regexPrefix and displayCmd have been customized 
 # for this OS.
-#
-# USAGE, GETSCRIPT and GETOPTION are placeholders for other
-# shell scripts.  They will be placed in findgrep.sh at build time.
 ###############################################################################
 
 declare -r script=${0##*/}	# base regex of symbolic link
@@ -44,21 +39,10 @@ declare -i maxDepth=-1 		# maxDepth (must be a positive number if used)
 declare -i bNoMatch=0		# find files without matches
 declare -i bQuery=0			# show find statement without executing
 declare -i bExecutable=0	# find executable files
+
 declare findCmd='find'
 declare -r regexPrefix='-regextype posix-egrep'
 declare -r dspCmd='-exec ls -lhF --color {} +'
-
-##############################################################################
-# doExit(errorNumber = 0): display usage and exit with errorNumber
-##############################################################################
-function doExit()
-{
-	usage
-	exit $1
-}
-
-
-
 ##############################################################################
 # usage(): display script usage
 ##############################################################################
@@ -154,19 +138,23 @@ function displayAlias()
 }
 
 ##############################################################################
-
+# doExit(errorNumber = 0): display usage and exit with errorNumber
+##############################################################################
+function doExit()
+{
+	usage
+	exit $1
+}
 
 ##############################################################################
 # getScript(): determine file extension(s) or regular expression
-#			   and description for files to locate
-# This consists of a case statement that associates a file or directory type
-# with an extension to search or a complete regex pattern and a description.
+#					and description for files to locate
 ##############################################################################
 function getScript()
 {
 	case $script in
 		findaudio)	# find in sound files
-			ext='\.(mp3|m4a|m4b|wav|aa|ogg|wma)$'
+			ext='\.(mp3|m4a|m4b|wav|aa||ogg|wma)$'
 			fdesc='audio files' ;;
 		findasm)  	# find in *.asm files
 			ext='\.asm$'
@@ -327,12 +315,10 @@ function getScript()
 }
 
 ##############################################################################
-##############################################################################
 # getOptions(): parse command line parameters
 #			 - after options are extracted,
 #			   command line arguments are placed in $params
 # 			 - call as getOptions "$@"
-# Get the command line options and see if they make sense together.
 ##############################################################################
 function getOptions()
 {
