@@ -35,3 +35,15 @@ Command: find /usr/include -regex '^\([^/]*/\)+[^/]+\.h$'  -exec grep -n --color
 
 REPLACE WITH:
 Command: find /usr/include -regex '^\([^/]*/\)+[^/]+\.h$' -print 2>/dev/null | xargs grep -n --color abcde
+
+===============================
+
+^.?/([^/]+/)*\.git$
+
+<BEG>followed by 0 or 1 character followed by /
+(one or more (not /) followed by /) 0 or more times
+.git<END>
+
+^.+\.h$
+<BEG>followed by 1 or more character followed by .h<END>
+
