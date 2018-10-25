@@ -17,8 +17,8 @@
 # The variables findCmd, regexPrefix and displayCmd have been customized 
 # for this OS.
 #
-# USAGE, GETSCRIPT and GETOPTION are placeholders for other
-# shell scripts.  They will be placed in findgrep.sh at build time.
+# USAGE, GETSCRIPT and GETOPTION (in findgrep-template.sh are placeholders for
+# other shell scripts.  They will be replaced in findgrep.sh at build time.
 ###############################################################################
 
 declare -r script=${0##*/}	# base regex of symbolic link
