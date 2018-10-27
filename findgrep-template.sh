@@ -2,7 +2,7 @@
 ###############################################################################
 # file:					findgrep.sh
 # author: 			 	John Schwartzman, Forte Systems, Inc.
-# last revision:		10/24/2018
+# last revision:		10/26/2018
 #
 # search for content in files with specific file types
 # findc, findh, findch, findcpp, findhpp, findchpp, findjava, etc.
@@ -10,8 +10,8 @@
 #
 # See case statement (getScript) for a list of symlinks and the 
 # file patterns they match.
-# Change dir=. (default) to dir=$PWD to show full paths (i.e., /xxx/xx
-# instead of ./xxx)
+# Change --dir=$PWD (default) to --dir=. to show relative paths
+# (i.e., ./xxx/xx instead of /xxx/xxx/xx)
 #
 # Built on <<DATE_AND_OSTYPE>>.
 # The variables findCmd, regexPrefix and displayCmd have been customized 
@@ -21,6 +21,7 @@
 # other shell scripts.  They will be replaced in findgrep.sh at build time.
 ###############################################################################
 
+declare -r VERSION="1.0.1"
 declare -r script=${0##*/}	# base regex of symbolic link
 declare regex 				# regex file pattern we're trying to match
 declare params				# string containing parameters (folllowing options)
@@ -54,9 +55,9 @@ function doExit()
 	exit $1
 }
 
-<<USAGE>>
-<<GETSCRIPT>>
-<<GETOPTION>>
+#<<USAGE>>
+#<<GETSCRIPT>>
+#<<GETOPTION>>
 
 ########## begin program execution ##########
 getScript
@@ -99,7 +100,7 @@ if [ $bCount -eq 1 ]; then			##### display count of matches
 			printf "$findCmd '$regex' 2>/dev/null"
 		else
 			$findCmd "$regex" 2>/dev/null | \
-				printf "Number of ${fdesc}: %d\n" `wc -l`
+				printf "Number of ${fdesc}: %d\n" $(wc -l)
 		fi
 	else
 		if [ $bQuery -eq 1 ]; then
@@ -112,7 +113,7 @@ if [ $bCount -eq 1 ]; then			##### display count of matches
 				relation="containing"
 			fi
 			$findCmd "$regex" 2>/dev/null | xargs $grepCmd "$params" 2>/dev/null | \
-				printf "Number of ${fdesc} $relation $params: %d\n" `wc -l`
+				printf "Number of ${fdesc} $relation $params: %d\n" $(wc -l)
 		fi
 	fi
 

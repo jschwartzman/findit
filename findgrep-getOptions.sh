@@ -7,13 +7,13 @@
 ##############################################################################
 function getOptions()
 {
-	args=`getopt --name $script \
-	--options 'cd:hiIl:mMn:N:qt:wxfs:u:g:k' \
+	args=$(getopt --name $script \
+	--options 'cd:hiIl:mMn:N:qt:wxfs:u:g:kv' \
 	--longoptions 'count,help,ignore-case-grep,ignore-case-find, \
         match,no-match,query, \
 		extended,level:,directory:,name:,NAME:,type:,whole-words,ww, \
 		size:minutes:,days:,today,user:,group:,nouser,nogroup, \
-		executable, context' -- "$@"`
+		executable, context, version' -- "$@")
 
 	if [ $? != 0 ]; then		# error in getopt
 		doExit 110
@@ -41,10 +41,14 @@ function getOptions()
 			-g | --group)					# group
 				shift
 				group="-group $1"
+				if [ -z "$1" ]; then
+                    printf "ERROR: %s is not a valid group.\n" $1
+                    doExit 192
+                fi
 				shift ;;
 			-h | --help)					# help
 				usage
-				displayAlias
+				alias
 				exit ;;
 			-i | --ignore-case-grep) 		# case insensitive grep
 				grepOpt+='i'
@@ -56,7 +60,7 @@ function getOptions()
 			-l | --level) 					# search to maxDepth
 				shift
 				maxDepth="$1"
-				if [ $maxDepth -lt 1 ]; then
+				if [[ $maxDepth -lt 1 || -z "$maxDepth" ]]; then
 					printf "ERROR: '%s' is not a valid maxdepth (maxDepth >= 1).\n"\
 							 $maxDepth
 					doExit 192
@@ -141,7 +145,14 @@ function getOptions()
 			-u | --user)		# user
 				shift
 				user="-user $1"
+				if [ -z "$1" ]; then
+                    printf "ERROR: %s is not a valid user.\n" $1
+                    doExit 192
+                fi
 				shift ;;
+            -v | --version)     # version
+                version
+				exit ;;
 			-w | --ww | --whole-words) 	# match whole words
 				bWholeWord=1
 				grepOpt+='w'
@@ -157,10 +168,18 @@ function getOptions()
 			--minutes)	# match last modification time in minutes
 				shift
 				time+="-mmin $1"
+				if [ -z "$1" ]; then
+                    printf "ERROR: %s is not a valid number of minutes.\n" $1
+                    doExit 192
+                fi
 				shift ;;
 			--days)		# match last modification time in days
 				shift
 				time+="-mtime $1"
+				if [ -z "$1" ]; then
+                    printf "ERROR: %s is not a valid number of days.\n" $1
+                    doExit 192
+                fi
 				shift ;;
 			--today)	# match last modification time to today
 				time='-mtime 0'
@@ -191,7 +210,7 @@ function getOptions()
 	fi
 
 	if [[ -z $dir ]]; then 
-		dir='.'
+		dir=$PWD
 	fi
 
 	findCmd+=" $dir $regexPrefix $type"

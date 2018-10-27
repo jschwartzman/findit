@@ -2,8 +2,10 @@
 ##############################################################################
 # file: 			makefgrep. sh - remove and recreate findgrep and
 #					symbolic links to findgrep in /usr/local/bin
+#                   This builds and deploys the findgrep application
+#                   and all of its symbolic links.
 # author:			John Schwartzman, Forte Systems, Inc.
-# last revision:	10/24/2018
+# last revision:	10/26/2018
 ##############################################################################
 
 set -o nounset			# use strict (no unset variables)
@@ -52,19 +54,18 @@ declare -r FILES="findasm findawk			 		 				\
 				  findxml findxslt"
 
 ######################## CHECK FOR ROOT USER #################################
-
 if [ `whoami` != 'root' ] ; then
 	printf "\nERROR: You must be root to write to $BINDIR.\n"
 	printf "USAGE: sudo ./makefgrep.sh\n\n"
 	exit 192
 fi
 
+################# check for a known operating system #########################
 printf "\n--Building findgrep for OSTYPE = $OSTYPE on $buildDate.\n"
-# check for a known operating system
-if [[ ${OSTYPE:0:5} = 'linux' ]]; then
+if [[ ${OSTYPE:0:5} = 'linux' ]]; then		# linux
 	regexPrefix="-regextype posix-egrep"
 	dspCmd='-exec ls -lhF --color {} +'
-elif [[ ${OSTYPE:0:6} = 'darwin' ]]; then
+elif [[ ${OSTYPE:0:6} = 'darwin' ]]; then	# MAC OS
 	findCmd+=' -E'
 	dspCmd='-exec ls -lhfG {} +'
 else
@@ -77,9 +78,9 @@ fi
 cd `dirname $0` 
 DEVDIR=$PWD
 
-# create a local copy of findgrep.sh by combining TEMPLATE_FILE
-# with a few $OSTYPE determined declarations
-# and inserting some other scripts into $DEVDIR/$SHSCRIPT.sh
+######### create a local copy of findgrep.sh by combining TEMPLATE_FILE ######
+######### with a few $OSTYPE determined declarations #########################
+######### and inserting some other scripts into $DEVDIR/$SHSCRIPT.sh #########
 
 # copy lines 1 through 15 of the template file to findgrep.sh
 sed -n '1,15p' $DEVDIR/$TEMPLATE_FILE > $DEVDIR/$SHSCRIPT.sh
@@ -88,46 +89,58 @@ sed -n '1,15p' $DEVDIR/$TEMPLATE_FILE > $DEVDIR/$SHSCRIPT.sh
 sed -n "16s/<<DATE_AND_OSTYPE>>/$buildDate for OSTYPE = $OSTYPE/p" $DEVDIR/$TEMPLATE_FILE >> $DEVDIR/$SHSCRIPT.sh
 
 # copy lines 17 through 47 of the template file to findgrep.sh
-sed -n '17,46p' $DEVDIR/$TEMPLATE_FILE >> $DEVDIR/$SHSCRIPT.sh
+sed -n '17,47p' $DEVDIR/$TEMPLATE_FILE >> $DEVDIR/$SHSCRIPT.sh
 
 # write customized variables to findgrep.sh (these are dependent on OSTYPE)
 echo "declare findCmd='$findCmd'" >> $DEVDIR/$SHSCRIPT.sh
 echo "declare -r regexPrefix='$regexPrefix'" >> $DEVDIR/$SHSCRIPT.sh
 echo "declare -r dspCmd='$dspCmd'" >> $DEVDIR/$SHSCRIPT.sh
+echo "declare -r BUILD_DATE='$buildDate'" >> $DEVDIR/$SHSCRIPT.sh
+echo "declare -r OSTYPE='$OSTYPE'" >> $DEVDIR/$SHSCRIPT.sh
 
-# copy lines 47 through 56 of the template file to findgrep.sh
-sed -n '47, 56p' $DEVDIR/$TEMPLATE_FILE >> $DEVDIR/$SHSCRIPT.sh
+# copy lines 48 through 57 of the template file to findgrep.sh
+sed -n '48, 57p' $DEVDIR/$TEMPLATE_FILE >> $DEVDIR/$SHSCRIPT.sh
 
 # replace the <<USAGE>> place holder with a newline and write USAGE_FILE to findgrep.sh
-sed -n "57s/<<USAGE>>/\n/p" $DEVDIR/$TEMPLATE_FILE >> $DEVDIR/$SHSCRIPT.sh
+sed -n "58s/#<<USAGE>>//p" $DEVDIR/$TEMPLATE_FILE >> $DEVDIR/$SHSCRIPT.sh
 cat $DEVDIR/$USAGE_FILE >> $DEVDIR/$SHSCRIPT.sh
 
 # replace the <<GETSCRIPT>> place holder with a newline and write GETSCRIPT_FILE to findgrep.sh
-sed -n "58s/<<GETSCRIPT>>/\n/p" $DEVDIR/$TEMPLATE_FILE >> $DEVDIR/$SHSCRIPT.sh
+sed -n "59s/#<<GETSCRIPT>>//p" $DEVDIR/$TEMPLATE_FILE >> $DEVDIR/$SHSCRIPT.sh
 cat $DEVDIR/$GETSCRIPT_FILE >> $DEVDIR/$SHSCRIPT.sh
 
 # replace the <<GETOPTIONS>> place holder with a newline and write GETOPTIONS_FILE to findgrep.sh
-sed -n "59s/<<GETOPTIONS>>/\n/p" $DEVDIR/$TEMPLATE_FILE >> $DEVDIR/$SHSCRIPT.sh
+sed -n "60s/#<<GETOPTIONS>>//p" $DEVDIR/$TEMPLATE_FILE >> $DEVDIR/$SHSCRIPT.sh
 cat $DEVDIR/$GETOPTIONS_FILE >> $DEVDIR/$SHSCRIPT.sh
 
-# copy lines 60 through 144 of the template file to findgrep.sh
-sed -n '60, 144p' $DEVDIR/$TEMPLATE_FILE >> $DEVDIR/$SHSCRIPT.sh
+# copy lines 61 through 145 (the rest of the file) of the template file to findgrep.sh
+sed -n '61, 145p' $DEVDIR/$TEMPLATE_FILE >> $DEVDIR/$SHSCRIPT.sh
 
 echo "--Finished creating $DEVDIR/$SHSCRIPT.sh"
 
+######################### move to /usr/local/bin #############################
 cd $BINDIR
 
-# delete all old find* symbolic link files (-type l) in this directory
+### delete all old find* symbolic link files (-type l) in this directory #####
 echo "--Deleting old find* symbolic links in $BINDIR"
-find . -maxdepth 1 -name "find*" -type l -exec rm {} \;
+for file in $FILES ; do
+    rm -fv $file
+    nCount+=1
+done
 
-# copy findgrep.sh to /usr/local/bin and make it readable and executable
+echo "--$nCount symbolic links to $SHSCRIPT were deleted."
+
+rm -fv $SHSCRIPT
+echo "--$SHSCRIPT was deleted"
+
+### copy findgrep.sh to /usr/local/bin and make it readable and executable ###
 echo "--Copying $DEVDIR/$SHSCRIPT.sh to $BINDIR/$SHSCRIPT"
 cp -f $DEVDIR/$SHSCRIPT.sh $SHSCRIPT
-echo "--Making $SHSCRIPT readable and executable to everyone"
+echo "--Making $SHSCRIPT readable and executable for everyone"
 chmod +rx $SHSCRIPT
 
-# remake the symbolic links
+########################### remake the symbolic links ########################
+nCount=0
 echo "--Creating symbolic links..."
 for file in $FILES ; do
 	ln -fsv $BINDIR/$SHSCRIPT $BINDIR/$file
