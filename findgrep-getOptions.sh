@@ -8,11 +8,11 @@
 function getOptions()
 {
 	args=$(getopt --name $script \
-	--options 'cd:hiIl:mMn:N:qt:wxfs:u:g:kv' \
+	--options 'cd:ehiIl:mMn:N:qt:wxs:u:g:kv' \
 	--longoptions 'count,help,ignore-case-grep,ignore-case-find, \
         match,no-match,query, \
 		extended,level:,directory:,name:,NAME:,type:,whole-words,ww, \
-		size:minutes:,days:,today,user:,group:,nouser,nogroup, \
+		size:,minutes:,days:,today,user:,group:,nouser,nogroup, \
 		executable, context, version' -- "$@")
 
 	if [ $? != 0 ]; then		# error in getopt
@@ -23,20 +23,20 @@ function getOptions()
 
 	while [ $# -gt 0 ]; do
 		case "$1" in
-			-c | --count) 					# display number of matching files
+			-c | --count) 				# display number of matching files
 				grepOpt+='l'
 				bCount=1
 				shift ;;
 			-d | --directory) 			# get (one or more) starting directory
 				shift
-				if [[ ! -d $1 ]]; then
+				if [ ! -d $1 ]; then
 					echo "invalid directory: $1"
 					doExit 192
 				fi
-				if [[ -n $dir ]]; then
+				if [ $dir ]; then
 					dir+=' '
 				fi
-				dir+="$1"
+				dir+=" $1"
 				shift ;;
 			-g | --group)					# group
 				shift
@@ -91,18 +91,27 @@ function getOptions()
 					fi
 				elif [ $script = 'findnoext' ]; then
 					regex="^\.?/([^/]+/)*[^\.]*$1[^\.]*$"
-
+				elif [ $script = 'findlinks' ]; then
+					regex="^.*$1.*$"
+				elif [ $script = 'findsockets' ]; then
+					regex="^.*$1.*$"
+				elif [ $script = 'findpipes' ]; then
+					regex="^.*$1.*$"
+                elif [ $script = 'finddirs' ]; then
+ 					regex="^.*$1.*$"
+                elif [ $script = 'findfiles' ]; then
+ 					regex="^.*$1.*$"
 				else
 					# start with a '/' or a './' followed by 0 or more directories
 					# followed by *name* and extension
-					regex="^\.?([^/]+/)*[^/]*$1[^/]*${ext}"
+					regex="^.*$1[^/]*${ext}"
 				fi
 				shift ;;
 			-N | --NAME) 	# provide complete filename to match
 				shift
 				if [ $script = 'findgrep' ]; then
 					# match comlete filename (extension included)
-					regex="^\.?/([^/]+/)*$1$"
+					regex="^.*/([^/]+/)*$1$"
 				elif [ $script = 'findhidden' ]; then
 					if [ ${1#.} = $1 ]; then
 						# argument does not start with a period
@@ -111,6 +120,16 @@ function getOptions()
 						# argument does start with a period
 						regex="^\.?/([^/]+/)*\\$1$"
 					fi
+				elif [ $script = 'findlinks' ]; then
+					regex="^.*/$1$"
+				elif [ $script = 'findsockets' ]; then
+					regex="^.*/$1$"
+				elif [ $script = 'findpipes' ]; then
+					regex="^.*/$1$"
+                elif [ $script = 'finddirs' ]; then
+ 					regex="^.*/$1.*$"
+                elif [ $script = 'findfiles' ]; then
+ 					regex="^.*/$1.*$"
 				else
 					# start with a '/' or a './' followed by 0 or more directories
 					# followed by name and extension
@@ -126,16 +145,16 @@ function getOptions()
 				shift ;;
 			-t | --type)	# type = (f)ile, (d)irectory, (l)ink, (s)ocket, (p)ipe
 				shift
-				if [[ $1 = 'f' || ${1%s} = 'file' ]]; then
+				if [ $1 = 'f' ] || [ ${1%s} = 'file' ]; then
 					type='-type f'
-				elif [[  $1 = d || ${1%%ector*} = 'dir' ]]; then
+				elif [ $1 = d ] || [ ${1%%ector*} = 'dir' ]; then
 					type='-type d'
 					displayCmd=''	# extended display does not work properly with dirs
-				elif [[  $1 = 'l' || ${1%s} = 'link' ]]; then
+				elif [ $1 = 'l' ] || [ ${1%s} = 'link' ]; then
 					type='-type l'
-				elif [[  $1 = 'p' || ${1%s} = 'pipe' ]]; then
+				elif [ $1 = 'p' ] || [ ${1%s} = 'pipe' ]; then
 					type='-type p'
-				elif [[  $1 = 's' || ${1%s} = 'socket' ]]; then
+				elif [ $1 = 's' ] || [ ${1%s} = 'socket' ]; then
 					type='-type s'
 				else			# unknown type
 					printf "ERROR: $1 is not a valid type.\n"
@@ -157,15 +176,13 @@ function getOptions()
 				bWholeWord=1
 				grepOpt+='w'
 				shift ;;
-			-f | --extended-format) 	# eXtended output
-				if [[ $type != '-type d' ]]; then
-					displayCmd=$dspCmd
-				fi
+			-e | --extended) 	# eXtended output ($dspCmd must be at end)
+                bExtended=1     # does not work with directories or matches
 				shift ;;
 			-x | --executable)	# executable files
-				bExecutable=1
+				displayCmd+=" -executable"
 				shift ;;
-			--minutes)	# match last modification time in minutes
+			--minutes)	# match last modification time in minutes (use +/-)
 				shift
 				time+="-mmin $1"
 				if [ -z "$1" ]; then
@@ -173,7 +190,7 @@ function getOptions()
                     doExit 192
                 fi
 				shift ;;
-			--days)		# match last modification time in days
+			--days)		# match last modification time in days (use +/-)
 				shift
 				time+="-mtime $1"
 				if [ -z "$1" ]; then
@@ -192,7 +209,9 @@ function getOptions()
 				shift ;;
 			--) 		# end of options
 				shift
-				params="$*"
+				params=$*
+				params=${params## }	# remove leading spaces
+				params=${params%% }	# remove trailing spaces
 				break ;;
 		esac
 	done
@@ -203,38 +222,61 @@ function getOptions()
 			echo "WARNING: The --match and --count switches cannot be meaningfully combined."
 			doExit 192
 		fi
+		if [ $bExtended -eq 1 ]; then
+			echo "WARNING: The --match and --extended switches cannot be used together."
+			doExit 192
+		fi
 		if [ $bNoMatch -eq 1 ]; then
 			echo "WARNING: The --match and --no-match switches cannot be meaningfully combined."
 			doExit 192
 		fi
 	fi
 
-	if [[ -z $dir ]]; then 
-		dir=$PWD
+	if [ $bShowMatches -eq 1 ]; then
+		if [ $script = 'finddirs' ] || [ $script = 'findlinks' ] \
+									|| [ $script = 'findpipes' ] \
+									|| [ $script = 'findsockets' ]; then
+			echo "WARNING: The --match switch cannot be used with $script."
+			doExit 192
+		fi
 	fi
 
-	findCmd+=" $dir $regexPrefix $type"
+	if [ -n "$params" ]; then
+		if [ $script = 'finddirs' ] || [ $script = 'findlinks' ] \
+									|| [ $script = 'findpipes' ] \
+									|| [ $script = 'findsockets' ]; then
+			echo "WARNING: You cannot search for '$params' in $script."
+			doExit 192
+		fi
+	fi
 
-	if [ $bExecutable -eq 1 ]; then		# look for executible files
-		findCmd+=" -executable"
+	if [ $bExtended -eq 1 ] && [ $script = 'finddirs' ]; then
+		echo "WARNING: $script cannot use the --extended switch."
+			doExit 192
+		fi
+
+	if [ -z "$dir" ]; then 
+		dir='.'		# change to $PWD to show complete (from the root) paths
 	fi
-	if [[ $user ]]; then				# set user if requested
-		findCmd+=" $user"
+
+	if [ -n "$user" ]; then			    # set user if requested
+		displayCmd+=" $user"
 	fi
-	if [[ $group ]]; then				# set group if requested
-		findCmd+=" $group"
+	if [ -n "$group" ]; then		    # set group if requested
+		displayCmd+=" $group"
 	fi
-	if [[ $size ]]; then				# set size if requested
-		findCmd+=" $size"
+	if [ -n "$size" ]; then				# set size if requested
+		displayCmd+=" $size"
 	fi
-	if [[ $time ]]; then				# set time if requested
-		findCmd+=" $time"
+	if [ -n "$time" ]; then				# set time if requested
+		displayCmd+=" $time"
 	fi
 	if [ $maxDepth -ne -1 ]; then	 	# set maxDepth if requested
-		findCmd+=" -maxdepth $maxDepth"
+		displayCmd+=" -maxdepth $maxDepth"
 	fi
-
-	findCmd+=" $findStyle"
+	if [ $bExtended -ne 0 ]; then       # this must be at the end
+        displayCmd+=" $dspCmd"
+    fi
 }
 
 ##############################################################################

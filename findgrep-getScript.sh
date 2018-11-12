@@ -49,6 +49,20 @@ function getScript()
 		findgrep)	# find in all files
 			regex='^.+$'
 			fdesc='matching files' ;;
+        findfiles)   # find in files
+            fdesc='files' ;;
+        finddirs)   # find in directories
+            type='-type d'
+            fdesc='directories' ;;
+		findlinks)	# find all links
+            type='-type l'
+			fdesc='links' ;;
+        findsockets) # find all sockets
+            type='-type s'
+            fdesc='sockets' ;;
+        findpipes) # find all pipes
+            type='-type p'
+            fdesc='pipes' ;;
 		findhidden)	# find hidden ('.*') files unless -p(attern) provided
 			regex='^.?/([^/]+/)*\.[^/]+$'
 			fdesc='hidden files' ;;
