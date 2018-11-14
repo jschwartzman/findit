@@ -8,7 +8,7 @@
 function getOptions()
 {
 	args=$(getopt --name $script \
-	--options 'cd:ehiIl:mMn:N:qt:wxs:u:g:kv' \
+	--options 'cd:ehig:kIl:mMn:N:qt:wxs:u:kv' \
 	--longoptions 'count,help,ignore-case-grep,ignore-case-find, \
         match,no-match,query, \
 		extended,level:,directory:,name:,NAME:,type:,whole-words,ww, \
@@ -27,7 +27,7 @@ function getOptions()
 				grepOpt+='l'
 				bCount=1
 				shift ;;
-			-d | --directory) 			# get (one or more) starting directory
+			-d | --directory) 			# get starting directory
 				shift
 				if [ ! -d $1 ]; then
 					echo "invalid directory: $1"
@@ -37,6 +37,9 @@ function getOptions()
 					dir+=' '
 				fi
 				dir+=" $1"
+				shift ;;
+			-e | --extended) 	# eXtended output ($dspCmd must be at end)
+                bExtended=1     # does not work with directories or matches
 				shift ;;
 			-g | --group)					# group
 				shift
@@ -57,6 +60,9 @@ function getOptions()
 			-I | --ignore-case-find)		# case insensitive find
 				findStyle='-iregex'
 				shift ;;
+            -k | --context)
+				grepOpt+="C 1"              # show 3 lines of context (1 before and 1 after")
+                shift ;;
 			-l | --level) 					# search to maxDepth
 				shift
 				maxDepth="$1"
@@ -70,9 +76,6 @@ function getOptions()
 				bShowMatches=1
 				grepOpt+='n'				# always show line numbers for matches
 				shift ;;
-            -k | --context)
-				grepOpt+="C 1"              # show 3 lines of context (1 before and 1 after")
-                shift ;;
 			-M | --no-match)				# find files without matches
 				bNoMatch=1
 				shift ;;
@@ -91,16 +94,12 @@ function getOptions()
 					fi
 				elif [ $script = 'findnoext' ]; then
 					regex="^\.?/([^/]+/)*[^\.]*$1[^\.]*$"
-				elif [ $script = 'findlinks' ]; then
-					regex="^.*$1.*$"
-				elif [ $script = 'findsockets' ]; then
-					regex="^.*$1.*$"
-				elif [ $script = 'findpipes' ]; then
-					regex="^.*$1.*$"
-                elif [ $script = 'finddirs' ]; then
- 					regex="^.*$1.*$"
-                elif [ $script = 'findfiles' ]; then
- 					regex="^.*$1.*$"
+				elif [ $script = 'findlinks' ] || [ $script = 'findsockets' ]    \
+											   || [ $script = 'findpipes' ]      \
+				                			   || [ $script = 'finddirs' ]       \
+                 							   || [ $script = 'findfiles' ]      \
+											   || [ $script = 'findx' ]; then
+ 					regex="^.*/$1.*$"
 				else
 					# start with a '/' or a './' followed by 0 or more directories
 					# followed by *name* and extension
@@ -120,15 +119,11 @@ function getOptions()
 						# argument does start with a period
 						regex="^\.?/([^/]+/)*\\$1$"
 					fi
-				elif [ $script = 'findlinks' ]; then
-					regex="^.*/$1$"
-				elif [ $script = 'findsockets' ]; then
-					regex="^.*/$1$"
-				elif [ $script = 'findpipes' ]; then
-					regex="^.*/$1$"
-                elif [ $script = 'finddirs' ]; then
- 					regex="^.*/$1.*$"
-                elif [ $script = 'findfiles' ]; then
+				elif [ $script = 'findlinks' ] || [ $script = 'findsockets' ]   \
+											   || [ $script = 'findpipes' ]     \
+				                			   || [ $script = 'finddirs' ]      \
+                 							   || [ $script = 'findfiles' ]     \
+											   || [ $script = 'findx' ]; then
  					regex="^.*/$1.*$"
 				else
 					# start with a '/' or a './' followed by 0 or more directories
@@ -175,9 +170,6 @@ function getOptions()
 			-w | --ww | --whole-words) 	# match whole words
 				bWholeWord=1
 				grepOpt+='w'
-				shift ;;
-			-e | --extended) 	# eXtended output ($dspCmd must be at end)
-                bExtended=1     # does not work with directories or matches
 				shift ;;
 			-x | --executable)	# executable files
 				displayCmd+=" -executable"
@@ -241,7 +233,7 @@ function getOptions()
 		fi
 	fi
 
-	if [ -n "$params" ]; then
+	if [ ! -z "$params" ]; then
 		if [ $script = 'finddirs' ] || [ $script = 'findlinks' ] \
 									|| [ $script = 'findpipes' ] \
 									|| [ $script = 'findsockets' ]; then
@@ -259,16 +251,16 @@ function getOptions()
 		dir='.'		# change to $PWD to show complete (from the root) paths
 	fi
 
-	if [ -n "$user" ]; then			    # set user if requested
+	if [ ! -z "$user" ]; then			    # set user if requested
 		displayCmd+=" $user"
 	fi
-	if [ -n "$group" ]; then		    # set group if requested
+	if [ ! -z "$group" ]; then		    # set group if requested
 		displayCmd+=" $group"
 	fi
-	if [ -n "$size" ]; then				# set size if requested
+	if [ ! -z "$size" ]; then				# set size if requested
 		displayCmd+=" $size"
 	fi
-	if [ -n "$time" ]; then				# set time if requested
+	if [ ! -z "$time" ]; then				# set time if requested
 		displayCmd+=" $time"
 	fi
 	if [ $maxDepth -ne -1 ]; then	 	# set maxDepth if requested

@@ -2,16 +2,16 @@
 ###############################################################################
 # file:					findgrep.sh
 # author: 			 	John Schwartzman, Forte Systems, Inc.
-# last revision:		11/11/2018
+# last revision:		11/13/2018
 #
-# search for content in files with specific file types
+# search for presence of files / content in files with specific file types
 # findc, findh, findch, findcpp, findhpp, findchpp, findjava, etc.
 # are symbolic links to findgrep
 #
 # See case statement (getScript) for a list of symlinks and the 
 # file patterns they match.
-# Change --dir=$PWD (default) to --dir=. to show relative paths
-# (i.e., ./xxx/xx instead of /xxx/xxx/xx)
+# Change --dir=. (default) to --dir=$PWD to show full paths
+# (i.e., /xxx/xxx/xx instead of ./xxx/xx)
 #
 # Built on <<DATE_AND_OSTYPE>>.
 # The variables findCmd, regexPrefix and displayCmd have been customized 
@@ -21,7 +21,7 @@
 # other shell scripts.  They will be replaced in findgrep.sh at build time.
 ###############################################################################
 
-declare -r VERSION="1.1.0"
+declare -r VERSION="1.1.1"
 declare -r script=${0##*/}	# base regex of symbolic link
 declare regex 				# regex file pattern we're trying to match
 declare params				# string containing parameters (folllowing options)
@@ -64,11 +64,11 @@ getScript
 getOptions "$@"
 
 # create regex from extension if it hasn't yet been defined
-if [ -z $regex ] && [ -n $ext ]; then
+if [ -z $regex ] && [ ! -z $ext ]; then
 	regex="^.+${ext}"
 fi
 
-if [ -n $regex ]; then
+if [ ! -z $regex ]; then
 	findCmd+=" $dir $type $regexPrefix $findStyle '$regex'"
 else
 	findCmd+=" $dir $type"

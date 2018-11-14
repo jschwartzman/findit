@@ -4,28 +4,27 @@
 function usage()
 {
 	cat <<-EOF
-	USAGE: $script [-h]|[-i][-I][-c]|[-m][-M][-w][-x][-q][-u user][-g group]
-	          [-s size][-l <maxdepth>][-t <type>][-l depth]
-	          [-n <filename>]|[-N <filename>][-d dir] 'text to find'
+	USAGE: $script [OPTIONS] ['text to find']
   $script alias to findgrep finds $fdesc
-  -h|--help             - display help
   -c|--count            - show count of matching files/directories
   -d|--directory <dir> 	- use starting directory dir (default: .)
+  -e|--extended         - display filespecs in 'ls -lFh' format
   -g|--group <id>       - show files owned by group id or name
+  -h|--help             - display help
   -i|--ignore-case-grep	- case-insensitive grep
   -I|--ignore-case-find	- case-Insensitive find
+  -k|--context          - show 3 context lines for each match (1 before and 1 after)
   -l|--level <maxdepth> - maxDepth must be an integer >= 1
   -m|--match            - display matches within files (1 context line)
   -M|--no-match         - display files without matches
   -n|--name <filename>  - specify part of a filename to match
   -N|--NAME <filename>	- specify an exact filename to match
   -q|--query            - show query without execution
-  -s|--size <[+|-]size> - find files with size = [+|-]n [b|c|k]
+  -s|--size <[+|-]size> - find files with size = [+|-]n [b|c|k|M|G]
   -t|--type <type>     	- type = f(ile)|l(ink)|d(irectory)|p(ipe)|s(ocket)
   -u|--user <id>        - show files owned by user id or name
+  -v|--version          - display version information
   -w|--whole-words      - match whole words
-  -e|--extended         - display filespecs in 'ls -lFh' format
-  -k|--context          - show 3 context lines for each match (1 before and 1 after)
   --minutes <[+|-]nMin> - find files with modification time of [+|-]nMin ago
   --days <[+|-]nDays>   - find files with modification time of [+|-]nDays days ago (0=today)
   --today               - find files that were modified in the last 24 hours (--days 0)
@@ -84,6 +83,7 @@ function alias()
 	   findsockets: find sockets or use with -n 'socketname' or -N 'socketname'
 	   findsvn:     find subversion directories
 	   findgit:     find git repositories
+	   findx:       find executable files
 	   findtar, findzip, findcomp:
 	                find in flavors of *.tar/*.zip/all compressed files
 	   findtmp:     find in temporary files (*.tmp)

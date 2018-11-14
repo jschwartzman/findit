@@ -2,18 +2,18 @@
 ###############################################################################
 # file:					findgrep.sh
 # author: 			 	John Schwartzman, Forte Systems, Inc.
-# last revision:		11/09/2018
+# last revision:		11/13/2018
 #
-# search for content in files with specific file types
+# search for presence of files / content in files with specific file types
 # findc, findh, findch, findcpp, findhpp, findchpp, findjava, etc.
 # are symbolic links to findgrep
 #
 # See case statement (getScript) for a list of symlinks and the 
 # file patterns they match.
-# Change --dir=$PWD (default) to --dir=. to show relative paths
-# (i.e., ./xxx/xx instead of /xxx/xxx/xx)
+# Change --dir=. (default) to --dir=$PWD to show full paths
+# (i.e., /xxx/xxx/xx instead of ./xxx/xx)
 #
-# Built on Fri Nov  9 19:17:09 EST 2018 for OSTYPE = linux-gnu.
+# Built on Wed Nov 14 11:02:47 EST 2018 for OSTYPE = linux-gnu.
 # The variables findCmd, regexPrefix and displayCmd have been customized 
 # for this OS.
 #
@@ -21,7 +21,7 @@
 # other shell scripts.  They will be replaced in findgrep.sh at build time.
 ###############################################################################
 
-declare -r VERSION="1.0.1"
+declare -r VERSION="1.1.1"
 declare -r script=${0##*/}	# base regex of symbolic link
 declare regex 				# regex file pattern we're trying to match
 declare params				# string containing parameters (folllowing options)
@@ -44,12 +44,13 @@ declare -i bWholeWord=0 	# grep whole words
 declare -i maxDepth=-1 		# maxDepth (must be a positive number if used)
 declare -i bNoMatch=0		# find files without matches
 declare -i bQuery=0			# show find statement without executing
-
+declare -i bExtended=0		# use ls -lFh formatting
 declare findCmd='find'
 declare -r regexPrefix='-regextype posix-egrep'
 declare -r dspCmd='-exec ls -lhF --color {} +'
-declare -r BUILD_DATE='Fri Nov  9 19:17:09 EST 2018'
+declare -r BUILD_DATE='Wed Nov 14 11:02:47 EST 2018'
 declare -r OSTYPE='linux-gnu'
+
 ##############################################################################
 # doExit(errorNumber = 0): display usage and exit with errorNumber
 ##############################################################################
@@ -59,38 +60,37 @@ function doExit()
 	exit $1
 }
 
-#<<USAGE>>
+
 ##############################################################################
 # usage(): display script usage
 ##############################################################################
 function usage()
 {
 	cat <<-EOF
-	USAGE: $script [-h]|[-i][-I][-c]|[-m][-M][-w][-x][-q][-u user][-g group]
-	          [-s size][-l <maxdepth>][-t <type>][-l depth]
-	          [-n <filename>]|[-N <filename>][-d dir] 'text to find'
+	USAGE: $script [OPTIONS] ['text to find']
   $script alias to findgrep finds $fdesc
-  -h|--help             - display help
   -c|--count            - show count of matching files/directories
-  -d|--directory <dir> 	- use starting directory dir (default: \$PWD)
+  -d|--directory <dir> 	- use starting directory dir (default: .)
+  -e|--extended         - display filespecs in 'ls -lFh' format
   -g|--group <id>       - show files owned by group id or name
+  -h|--help             - display help
   -i|--ignore-case-grep	- case-insensitive grep
   -I|--ignore-case-find	- case-Insensitive find
+  -k|--context          - show 3 context lines for each match (1 before and 1 after)
   -l|--level <maxdepth> - maxDepth must be an integer >= 1
   -m|--match            - display matches within files (1 context line)
   -M|--no-match         - display files without matches
   -n|--name <filename>  - specify part of a filename to match
   -N|--NAME <filename>	- specify an exact filename to match
   -q|--query            - show query without execution
-  -s|--size <[+|-]size> - find files with size = [+|-]n [b|c|k]
+  -s|--size <[+|-]size> - find files with size = [+|-]n [b|c|k|M|G]
   -t|--type <type>     	- type = f(ile)|l(ink)|d(irectory)|p(ipe)|s(ocket)
   -u|--user <id>        - show files owned by user id or name
+  -v|--version          - display version information
   -w|--whole-words      - match whole words
-  -f|--extended-format  - display filespecs in 'ls -l' format
-  -k|--context          - show 3 context lines for each match (1 before and 1 after)
   --minutes <[+|-]nMin> - find files with modification time of [+|-]nMin ago
   --days <[+|-]nDays>   - find files with modification time of [+|-]nDays days ago (0=today)
-  --today               - find files that were modified today (--days 0)
+  --today               - find files that were modified in the last 24 hours (--days 0)
   --nouser              - find files not owned by a known user
   --nogroup             - find files not owned by a known group
 
@@ -116,6 +116,8 @@ function alias()
 	   findcall:    find in all C and C++ language files
 	   findcfg:     find in configuration files (*.cfg/*.conf/*.ini)
 	   findcss:     find in cascading style sheet files
+	   finddirs:    find directories or use with -n 'dirname' or -N 'dirname'
+	   findfiles:   find files or use with -n 'filename' or -N 'filename'
 	   findgrep:    find all files or use with -n 'filename' or -N 'filename'
 	   findhtml:    find in *.htm, *.html, *.css and *.js files
 	   findhidden:  find in hidden files (.*)
@@ -124,7 +126,7 @@ function alias()
 	   findjava, findjar:
 	                find in Java/Java archive files
 	   findjs:      find in javascript files
-	   findlinks:	find symbolic links
+	   findlinks:	find symbolic links or use with -n 'linkname' or -N 'linkname'
 	   findlog:     find in *.log files
 	   findmake, findMake:
 	                find in make files (*.mk, *.mak)/'Makefile or makefile'
@@ -139,9 +141,12 @@ function alias()
 	   findrpm:     find in RPM files
 	   findsh, findpl, findpy, findrb, findshell:
 	                find in sh/Perl/Python/Ruby/all shell script files
+	   findpipes:   find pipes or use with -n 'pipename' or -N 'pipename'
 	   findspace:   find in files containing space(s) in their filepaths
+	   findsockets: find sockets or use with -n 'socketname' or -N 'socketname'
 	   findsvn:     find subversion directories
 	   findgit:     find git repositories
+	   findx:       find executable files
 	   findtar, findzip, findcomp:
 	                find in flavors of *.tar/*.zip/all compressed files
 	   findtmp:     find in temporary files (*.tmp)
@@ -162,13 +167,14 @@ function version()
 	cat <<-EOF
 	
 	    $script alias to findgrep finds $fdesc
-		    VERSION:  $VERSION
-		    Built on: $BUILD_DATE for $OSTYPE
+	    VERSION: $VERSION
+	    Built on: $BUILD_DATE for $OSTYPE
 
 	EOF
 }
 
 ##############################################################################
+
 
 ##############################################################################
 # getScript(): determine file extension(s) or regular expression
@@ -339,6 +345,9 @@ function getScript()
 		findwav)	# find in *.wav
 			ext='\.wav$'
 			fdesc='wav files' ;;
+		findx)
+			displayCmd+=" -executable"
+			fdesc='executable files' ;;
 		findxml)	# find in *.xml files
 			ext='\.xml$'
 			fdesc='xml files' ;;
@@ -365,11 +374,11 @@ function getScript()
 function getOptions()
 {
 	args=$(getopt --name $script \
-	--options 'cd:hiIl:mMn:N:qt:wxfs:u:g:kv' \
+	--options 'cd:ehig:kIl:mMn:N:qt:wxs:u:kv' \
 	--longoptions 'count,help,ignore-case-grep,ignore-case-find, \
         match,no-match,query, \
 		extended,level:,directory:,name:,NAME:,type:,whole-words,ww, \
-		size:minutes:,days:,today,user:,group:,nouser,nogroup, \
+		size:,minutes:,days:,today,user:,group:,nouser,nogroup, \
 		executable, context, version' -- "$@")
 
 	if [ $? != 0 ]; then		# error in getopt
@@ -380,20 +389,23 @@ function getOptions()
 
 	while [ $# -gt 0 ]; do
 		case "$1" in
-			-c | --count) 					# display number of matching files
+			-c | --count) 				# display number of matching files
 				grepOpt+='l'
 				bCount=1
 				shift ;;
-			-d | --directory) 			# get (one or more) starting directory
+			-d | --directory) 			# get starting directory
 				shift
-				if [[ ! -d $1 ]]; then
+				if [ ! -d $1 ]; then
 					echo "invalid directory: $1"
 					doExit 192
 				fi
 				if [ $dir ]; then
 					dir+=' '
 				fi
-				dir+="$1"
+				dir+=" $1"
+				shift ;;
+			-e | --extended) 	# eXtended output ($dspCmd must be at end)
+                bExtended=1     # does not work with directories or matches
 				shift ;;
 			-g | --group)					# group
 				shift
@@ -414,6 +426,9 @@ function getOptions()
 			-I | --ignore-case-find)		# case insensitive find
 				findStyle='-iregex'
 				shift ;;
+            -k | --context)
+				grepOpt+="C 1"              # show 3 lines of context (1 before and 1 after")
+                shift ;;
 			-l | --level) 					# search to maxDepth
 				shift
 				maxDepth="$1"
@@ -427,9 +442,6 @@ function getOptions()
 				bShowMatches=1
 				grepOpt+='n'				# always show line numbers for matches
 				shift ;;
-            -k | --context)
-				grepOpt+="C 1"              # show 3 lines of context (1 before and 1 after")
-                shift ;;
 			-M | --no-match)				# find files without matches
 				bNoMatch=1
 				shift ;;
@@ -448,16 +460,12 @@ function getOptions()
 					fi
 				elif [ $script = 'findnoext' ]; then
 					regex="^\.?/([^/]+/)*[^\.]*$1[^\.]*$"
-				elif [ $script = 'findlinks' ]; then
-					regex="^.*$1.*$"
-				elif [ $script = 'findsockets' ]; then
-					regex="^.*$1.*$"
-				elif [ $script = 'findpipes' ]; then
-					regex="^.*$1.*$"
-                elif [ $script = 'finddirs' ]; then
- 					regex="^.*$1.*$"
-                elif [ $script = 'findfiles' ]; then
- 					regex="^.*$1.*$"
+				elif [ $script = 'findlinks' ] || [ $script = 'findsockets' ]    \
+											   || [ $script = 'findpipes' ]      \
+				                			   || [ $script = 'finddirs' ]       \
+                 							   || [ $script = 'findfiles' ]      \
+											   || [ $script = 'findx' ]; then
+ 					regex="^.*/$1.*$"
 				else
 					# start with a '/' or a './' followed by 0 or more directories
 					# followed by *name* and extension
@@ -477,15 +485,11 @@ function getOptions()
 						# argument does start with a period
 						regex="^\.?/([^/]+/)*\\$1$"
 					fi
-				elif [ $script = 'findlinks' ]; then
-					regex="^.*/$1$"
-				elif [ $script = 'findsockets' ]; then
-					regex="^.*/$1$"
-				elif [ $script = 'findpipes' ]; then
-					regex="^.*/$1$"
-                elif [ $script = 'finddirs' ]; then
- 					regex="^.*/$1.*$"
-                elif [ $script = 'findfiles' ]; then
+				elif [ $script = 'findlinks' ] || [ $script = 'findsockets' ]   \
+											   || [ $script = 'findpipes' ]     \
+				                			   || [ $script = 'finddirs' ]      \
+                 							   || [ $script = 'findfiles' ]     \
+											   || [ $script = 'findx' ]; then
  					regex="^.*/$1.*$"
 				else
 					# start with a '/' or a './' followed by 0 or more directories
@@ -504,14 +508,14 @@ function getOptions()
 				shift
 				if [ $1 = 'f' ] || [ ${1%s} = 'file' ]; then
 					type='-type f'
-				elif [  $1 = d ] || [ ${1%%ector*} = 'dir' ]; then
+				elif [ $1 = d ] || [ ${1%%ector*} = 'dir' ]; then
 					type='-type d'
 					displayCmd=''	# extended display does not work properly with dirs
-				elif [  $1 = 'l' ] || [ ${1%s} = 'link' ]; then
+				elif [ $1 = 'l' ] || [ ${1%s} = 'link' ]; then
 					type='-type l'
-				elif [  $1 = 'p' ] || [ ${1%s} = 'pipe' ]; then
+				elif [ $1 = 'p' ] || [ ${1%s} = 'pipe' ]; then
 					type='-type p'
-				elif [  $1 = 's' ] || [ ${1%s} = 'socket' ]; then
+				elif [ $1 = 's' ] || [ ${1%s} = 'socket' ]; then
 					type='-type s'
 				else			# unknown type
 					printf "ERROR: $1 is not a valid type.\n"
@@ -533,15 +537,10 @@ function getOptions()
 				bWholeWord=1
 				grepOpt+='w'
 				shift ;;
-			-f | --extended-format) 	# eXtended output
-				if [[ $type != '-type d' ]]; then
-					displayCmd=$dspCmd
-				fi
-				shift ;;
 			-x | --executable)	# executable files
 				displayCmd+=" -executable"
 				shift ;;
-			--minutes)	# match last modification time in minutes
+			--minutes)	# match last modification time in minutes (use +/-)
 				shift
 				time+="-mmin $1"
 				if [ -z "$1" ]; then
@@ -549,7 +548,7 @@ function getOptions()
                     doExit 192
                 fi
 				shift ;;
-			--days)		# match last modification time in days
+			--days)		# match last modification time in days (use +/-)
 				shift
 				time+="-mtime $1"
 				if [ -z "$1" ]; then
@@ -568,7 +567,9 @@ function getOptions()
 				shift ;;
 			--) 		# end of options
 				shift
-				params="$*"
+				params=$*
+				params=${params## }	# remove leading spaces
+				params=${params%% }	# remove trailing spaces
 				break ;;
 		esac
 	done
@@ -579,48 +580,78 @@ function getOptions()
 			echo "WARNING: The --match and --count switches cannot be meaningfully combined."
 			doExit 192
 		fi
+		if [ $bExtended -eq 1 ]; then
+			echo "WARNING: The --match and --extended switches cannot be used together."
+			doExit 192
+		fi
 		if [ $bNoMatch -eq 1 ]; then
 			echo "WARNING: The --match and --no-match switches cannot be meaningfully combined."
 			doExit 192
 		fi
 	fi
 
-	if [ -z $dir ]; then 
-		dir=$PWD
+	if [ $bShowMatches -eq 1 ]; then
+		if [ $script = 'finddirs' ] || [ $script = 'findlinks' ] \
+									|| [ $script = 'findpipes' ] \
+									|| [ $script = 'findsockets' ]; then
+			echo "WARNING: The --match switch cannot be used with $script."
+			doExit 192
+		fi
 	fi
 
-	if [ -n "$user" ]; then			    # set user if requested
+	if [ ! -z "$params" ]; then
+		if [ $script = 'finddirs' ] || [ $script = 'findlinks' ] \
+									|| [ $script = 'findpipes' ] \
+									|| [ $script = 'findsockets' ]; then
+			echo "WARNING: You cannot search for '$params' in $script."
+			doExit 192
+		fi
+	fi
+
+	if [ $bExtended -eq 1 ] && [ $script = 'finddirs' ]; then
+		echo "WARNING: $script cannot use the --extended switch."
+			doExit 192
+		fi
+
+	if [ -z "$dir" ]; then 
+		dir='.'		# change to $PWD to show complete (from the root) paths
+	fi
+
+	if [ ! -z "$user" ]; then			    # set user if requested
 		displayCmd+=" $user"
 	fi
-	if [ -n "$group" ]; then		    # set group if requested
+	if [ ! -z "$group" ]; then		    # set group if requested
 		displayCmd+=" $group"
 	fi
-	if [ -n "$size" ]; then				# set size if requested
+	if [ ! -z "$size" ]; then				# set size if requested
 		displayCmd+=" $size"
 	fi
-	if [ -n "$time" ]; then				# set time if requested
+	if [ ! -z "$time" ]; then				# set time if requested
 		displayCmd+=" $time"
 	fi
 	if [ $maxDepth -ne -1 ]; then	 	# set maxDepth if requested
 		displayCmd+=" -maxdepth $maxDepth"
 	fi
+	if [ $bExtended -ne 0 ]; then       # this must be at the end
+        displayCmd+=" $dspCmd"
+    fi
 }
 
 ##############################################################################
+
 ########## begin program execution ##########
 getScript
 getOptions "$@"
 
-# create regex from extension if it hasn't yet been defined and needs to be
-if [ -z $regex ] && [ $ext ]; then
-	regex="^.*${ext}"
+# create regex from extension if it hasn't yet been defined
+if [ -z $regex ] && [ ! -z $ext ]; then
+	regex="^.+${ext}"
 fi
 
-if [ $regex ]; then
-    regex="'$regex'"
-    findCmd+=" $dir $type $regexPrefix $findStyle $regex"
+if [ ! -z $regex ]; then
+	findCmd+=" $dir $type $regexPrefix $findStyle '$regex'"
 else
-    findCmd+=" $dir $type"
+	findCmd+=" $dir $type"
 fi
 
 ########## determine whether we are going to use grep ##########
@@ -640,8 +671,8 @@ else											# use grep
 	fi
 
 	grepCmd='grep '
-	if [ $grepOpt ]; then
-		grepCmd+="-$grepOpt"
+	if [[ $grepOpt ]]; then
+		grepCmd+=" -$grepOpt"
 	fi
 	grepCmd+=' --color'
 fi
@@ -652,14 +683,14 @@ echo
 if [ $bCount -eq 1 ]; then			##### display count of matches
 	if [ -z "$grepCmd" ]; then
 		if [ $bQuery -eq 1 ]; then
-			printf "$findCmd $displayCmd 2>/dev/null"
+			printf "$findCmd 2>/dev/null"
 		else
 			eval $findCmd $displayCmd 2>/dev/null | \
 				printf "Number of ${fdesc}: %d\n" $(wc -l)
 		fi
 	else
 		if [ $bQuery -eq 1 ]; then
-			printf "$findCmd 2>/dev/null | $grepCmd '$params' 2>/dev/null"
+			printf "$findCmd $displayCmd 2>/dev/null | $grepCmd '$params' 2>/dev/null"
 		else
 			declare relation # "containing" or "not containing"
 			if [ $bNoMatch -eq 1 ]; then
@@ -674,7 +705,7 @@ if [ $bCount -eq 1 ]; then			##### display count of matches
 
 elif [ $bShowMatches -eq 1 ]; then		# display matching lines
 	if [ $bQuery -eq 1 ]; then
-		echo "$findCmd $displayCmd 2>/dev/null | xargs $grepCmd '$params' 2>/dev/null"
+		printf "$findCmd $displayCmd 2>/dev/null | xargs $grepCmd '$params' 2>/dev/null"
 	else
 		eval $findCmd $displayCmd 2>/dev/null | xargs $grepCmd "$params" 2>/dev/null
 	fi
@@ -682,13 +713,13 @@ elif [ $bShowMatches -eq 1 ]; then		# display matching lines
 else												# display filespecs only
  	if [[ -z $grepCmd ]]; then
 		if [ $bQuery -eq 1 ]; then
-			echo "$findCmd $displayCmd 2>/dev/null"
+			printf "$findCmd $displayCmd 2>/dev/null"
 		else
 			eval $findCmd $displayCmd 2>/dev/null
 		fi
 	else
 		if [ $bQuery -eq 1 ]; then
-			echo "$findCmd $displayCmd 2>/dev/null | xargs $grepCmd '$params' 2>/dev/null"
+			printf "$findCmd $displayCmd 2>/dev/null | xargs $grepCmd '$params' 2>/dev/null"
 		else
 			eval $findCmd $displayCmd 2>/dev/null | xargs $grepCmd "$params" 2>/dev/null
 		fi

@@ -167,6 +167,9 @@ function getScript()
 		findwav)	# find in *.wav
 			ext='\.wav$'
 			fdesc='wav files' ;;
+		findx)
+			displayCmd+=" -executable"
+			fdesc='executable files' ;;
 		findxml)	# find in *.xml files
 			ext='\.xml$'
 			fdesc='xml files' ;;
