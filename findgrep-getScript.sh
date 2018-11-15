@@ -51,9 +51,16 @@ function getScript()
 			fdesc='matching files' ;;
         findfiles)   # find in files
             fdesc='files' ;;
-        finddirs)   # find in directories
+        finddirs)   # find directories
             type='-type d'
             fdesc='directories' ;;
+    	findhfiles)	# find hidden ('.*') files unless -p(attern) provided
+			regex='^.?/([^/]+/)*\.[^/]+$'
+			fdesc='hidden files' ;;
+    	findhdirs)   # find hidden directories
+            type='-type d'
+			regex='^.*/\..*$'
+            fdesc='hidden directories' ;;
 		findlinks)	# find all links
             type='-type l'
 			fdesc='links' ;;
@@ -63,9 +70,6 @@ function getScript()
         findpipes) # find all pipes
             type='-type p'
             fdesc='pipes' ;;
-		findhidden)	# find hidden ('.*') files unless -p(attern) provided
-			regex='^.?/([^/]+/)*\.[^/]+$'
-			fdesc='hidden files' ;;
 		findhtml)	# find in *.htm or *.html files
 			ext='\.(html?|css|js)$'
 			fdesc='html files' ;;

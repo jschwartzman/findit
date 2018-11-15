@@ -25,6 +25,7 @@ function usage()
   -u|--user <id>        - show files owned by user id or name
   -v|--version          - display version information
   -w|--whole-words      - match whole words
+  -x|--executable		- find executable files
   --minutes <[+|-]nMin> - find files with modification time of [+|-]nMin ago
   --days <[+|-]nDays>   - find files with modification time of [+|-]nDays days ago (0=today)
   --today               - find files that were modified in the last 24 hours (--days 0)
@@ -57,7 +58,8 @@ function alias()
 	   findfiles:   find files or use with -n 'filename' or -N 'filename'
 	   findgrep:    find all files or use with -n 'filename' or -N 'filename'
 	   findhtml:    find in *.htm, *.html, *.css and *.js files
-	   findhidden:  find in hidden files (.*)
+	   findhfiles, findhdirs:  
+	                find hidden files / directories
 	   findimg:     find in image files (*.jpg, .tiff, etc.)
 	   findinc:     find in include files (*.in and *.inc)
 	   findjava, findjar:

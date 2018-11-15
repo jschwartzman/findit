@@ -5,7 +5,7 @@
 #                   This builds and deploys the findgrep application
 #                   and all of its symbolic links.
 # author:			John Schwartzman, Forte Systems, Inc.
-# last revision:	11/13/2018
+# last revision:	11/14/2018
 ##############################################################################
 
 set -o nounset			# use strict (no unset variables)
@@ -27,10 +27,10 @@ declare -r FILES="findasm findawk findc findh findch 				\
 				  findcpp findhpp findchpp findcall					\
 				  findcomp findzip findcfg findx					\
 				  findaudio findimg	findsockets findpipes			\
-				  findhidden findhtml findcss findjs				\
+				  findhfiles findhtml findcss findjs				\
 				  findinc findjava findjar findfiles				\
 				  findmake findMake	findlinks finddirs				\
-				  findmp3 findwav findogg							\
+				  findmp3 findwav findogg findhdirs					\
 				  findnoext	findlog	findobj	findodt	                \
 				  findpdf findphp findrdme findrpm					\
 				  findsh findpl findpy findrb findshell				\

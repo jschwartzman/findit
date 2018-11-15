@@ -2,7 +2,7 @@
 ###############################################################################
 # file:					findgrep.sh
 # author: 			 	John Schwartzman, Forte Systems, Inc.
-# last revision:		11/13/2018
+# last revision:		11/14/2018
 #
 # search for presence of files / content in files with specific file types
 # findc, findh, findch, findcpp, findhpp, findchpp, findjava, etc.
@@ -13,7 +13,7 @@
 # Change --dir=. (default) to --dir=$PWD to show full paths
 # (i.e., /xxx/xxx/xx instead of ./xxx/xx)
 #
-# Built on Wed Nov 14 11:02:47 EST 2018 for OSTYPE = linux-gnu.
+# Built on Wed Nov 14 19:25:44 EST 2018 for OSTYPE = linux-gnu.
 # The variables findCmd, regexPrefix and displayCmd have been customized 
 # for this OS.
 #
@@ -21,7 +21,7 @@
 # other shell scripts.  They will be replaced in findgrep.sh at build time.
 ###############################################################################
 
-declare -r VERSION="1.1.1"
+declare -r VERSION="0.1.2"
 declare -r script=${0##*/}	# base regex of symbolic link
 declare regex 				# regex file pattern we're trying to match
 declare params				# string containing parameters (folllowing options)
@@ -48,7 +48,7 @@ declare -i bExtended=0		# use ls -lFh formatting
 declare findCmd='find'
 declare -r regexPrefix='-regextype posix-egrep'
 declare -r dspCmd='-exec ls -lhF --color {} +'
-declare -r BUILD_DATE='Wed Nov 14 11:02:47 EST 2018'
+declare -r BUILD_DATE='Wed Nov 14 19:25:44 EST 2018'
 declare -r OSTYPE='linux-gnu'
 
 ##############################################################################
@@ -88,6 +88,7 @@ function usage()
   -u|--user <id>        - show files owned by user id or name
   -v|--version          - display version information
   -w|--whole-words      - match whole words
+  -x|--executable		- find executable files
   --minutes <[+|-]nMin> - find files with modification time of [+|-]nMin ago
   --days <[+|-]nDays>   - find files with modification time of [+|-]nDays days ago (0=today)
   --today               - find files that were modified in the last 24 hours (--days 0)
@@ -120,7 +121,8 @@ function alias()
 	   findfiles:   find files or use with -n 'filename' or -N 'filename'
 	   findgrep:    find all files or use with -n 'filename' or -N 'filename'
 	   findhtml:    find in *.htm, *.html, *.css and *.js files
-	   findhidden:  find in hidden files (.*)
+	   findhfiles, findhdirs:  
+	                find hidden files / directories
 	   findimg:     find in image files (*.jpg, .tiff, etc.)
 	   findinc:     find in include files (*.in and *.inc)
 	   findjava, findjar:
@@ -229,9 +231,16 @@ function getScript()
 			fdesc='matching files' ;;
         findfiles)   # find in files
             fdesc='files' ;;
-        finddirs)   # find in directories
+        finddirs)   # find directories
             type='-type d'
             fdesc='directories' ;;
+    	findhfiles)	# find hidden ('.*') files unless -p(attern) provided
+			regex='^.?/([^/]+/)*\.[^/]+$'
+			fdesc='hidden files' ;;
+    	findhdirs)   # find hidden directories
+            type='-type d'
+			regex='^.*/\..*$'
+            fdesc='hidden directories' ;;
 		findlinks)	# find all links
             type='-type l'
 			fdesc='links' ;;
@@ -241,9 +250,6 @@ function getScript()
         findpipes) # find all pipes
             type='-type p'
             fdesc='pipes' ;;
-		findhidden)	# find hidden ('.*') files unless -p(attern) provided
-			regex='^.?/([^/]+/)*\.[^/]+$'
-			fdesc='hidden files' ;;
 		findhtml)	# find in *.htm or *.html files
 			ext='\.(html?|css|js)$'
 			fdesc='html files' ;;
@@ -374,7 +380,7 @@ function getScript()
 function getOptions()
 {
 	args=$(getopt --name $script \
-	--options 'cd:ehig:kIl:mMn:N:qt:wxs:u:kv' \
+	--options 'cd:ehiIl:mMn:N:qt:wxs:u:g:kv' \
 	--longoptions 'count,help,ignore-case-grep,ignore-case-find, \
         match,no-match,query, \
 		extended,level:,directory:,name:,NAME:,type:,whole-words,ww, \
@@ -393,7 +399,7 @@ function getOptions()
 				grepOpt+='l'
 				bCount=1
 				shift ;;
-			-d | --directory) 			# get starting directory
+			-d | --directory) 			# get (one or more) starting directory
 				shift
 				if [ ! -d $1 ]; then
 					echo "invalid directory: $1"
@@ -450,7 +456,15 @@ function getOptions()
 				if [ $script = 'findgrep' ]; then
 					# match $1 in filename only (not in dirs)
 					regex="^\.?/([^/]+/)*[^/]*$1[^/]*$"
-				elif [ $script = 'findhidden' ]; then
+				elif [ $script = 'findhfiles' ]; then
+					if [ ${1#.} = ${1} ]; then
+						# argument does not start with a period
+						regex="^\.?/([^/]+/)*\.[^/]*$1[^/]*$"
+					else
+						# argument does start with a period
+						regex="^\.?/([^/]+/)*\\$1[^/]*$"
+					fi
+				elif [ $script = 'findhdirs' ]; then
 					if [ ${1#.} = ${1} ]; then
 						# argument does not start with a period
 						regex="^\.?/([^/]+/)*\.[^/]*$1[^/]*$"
@@ -477,7 +491,15 @@ function getOptions()
 				if [ $script = 'findgrep' ]; then
 					# match comlete filename (extension included)
 					regex="^.*/([^/]+/)*$1$"
-				elif [ $script = 'findhidden' ]; then
+				elif [ $script = 'findhfiles' ]; then
+					if [ ${1#.} = $1 ]; then
+						# argument does not start with a period
+						regex="^\.?/([^/]+/)*\.$1$"
+					else
+						# argument does start with a period
+						regex="^\.?/([^/]+/)*\\$1$"
+					fi
+				elif [ $script = 'findhdirs' ]; then
 					if [ ${1#.} = $1 ]; then
 						# argument does not start with a period
 						regex="^\.?/([^/]+/)*\.$1$"
@@ -489,7 +511,8 @@ function getOptions()
 											   || [ $script = 'findpipes' ]     \
 				                			   || [ $script = 'finddirs' ]      \
                  							   || [ $script = 'findfiles' ]     \
-											   || [ $script = 'findx' ]; then
+											   || [ $script = 'findx' ]			\
+											   || [ $script = 'findhdirs' ]; then
  					regex="^.*/$1.*$"
 				else
 					# start with a '/' or a './' followed by 0 or more directories
@@ -590,37 +613,47 @@ function getOptions()
 		fi
 	fi
 
-	if [ $bShowMatches -eq 1 ]; then
-		if [ $script = 'finddirs' ] || [ $script = 'findlinks' ] \
-									|| [ $script = 'findpipes' ] \
-									|| [ $script = 'findsockets' ]; then
+	if [ $bShowMatches -eq 1 ]; then	# we can't find matches in these types
+		if [ $script = 'finddirs' ] || [ $script = 'findlinks' 	 ] \
+									|| [ $script = 'findpipes' 	 ] \
+									|| [ $script = 'findsockets' ] \
+									|| [ $script = 'findgit' ]	   \
+									|| [ $script = 'findsvn' ]	   \
+									|| [ $script = 'findhdirs' ]; then
 			echo "WARNING: The --match switch cannot be used with $script."
 			doExit 192
 		fi
 	fi
 
-	if [ ! -z "$params" ]; then
-		if [ $script = 'finddirs' ] || [ $script = 'findlinks' ] \
-									|| [ $script = 'findpipes' ] \
-									|| [ $script = 'findsockets' ]; then
+	if [ ! -z "$params" ]; then	# we can't find matches in these types
+		if [ $script = 'finddirs' ] || [ $script = 'findlinks' ] 	\
+									|| [ $script = 'findpipes' ] 	\
+									|| [ $script = 'findsockets' ]	\
+									|| [ $script = 'findgit' ]		\
+									|| [ $script = 'findsvn' ]		\
+									|| [ $script = 'findhdirs' ]; then
 			echo "WARNING: You cannot search for '$params' in $script."
 			doExit 192
 		fi
 	fi
 
-	if [ $bExtended -eq 1 ] && [ $script = 'finddirs' ]; then
-		echo "WARNING: $script cannot use the --extended switch."
+	if [ $bExtended -eq 1 ]; then	# bExtended doesn't work with directories
+		if [ $script = 'finddirs' ] || [ $script = 'findgit' ]		\
+									|| [ $script = 'findsvn' ]		\
+									|| [ $script = 'findhdirs' ]; then
+			echo "WARNING: $script cannot use the --extended switch."
 			doExit 192
 		fi
+	fi
 
 	if [ -z "$dir" ]; then 
-		dir='.'		# change to $PWD to show complete (from the root) paths
+		dir='.'		# change to $PWD or / to show complete paths
 	fi
 
 	if [ ! -z "$user" ]; then			    # set user if requested
 		displayCmd+=" $user"
 	fi
-	if [ ! -z "$group" ]; then		    # set group if requested
+	if [ ! -z "$group" ]; then		    	# set group if requested
 		displayCmd+=" $group"
 	fi
 	if [ ! -z "$size" ]; then				# set size if requested
@@ -629,10 +662,10 @@ function getOptions()
 	if [ ! -z "$time" ]; then				# set time if requested
 		displayCmd+=" $time"
 	fi
-	if [ $maxDepth -ne -1 ]; then	 	# set maxDepth if requested
+	if [ $maxDepth -ne -1 ]; then	 		# set maxDepth if requested
 		displayCmd+=" -maxdepth $maxDepth"
 	fi
-	if [ $bExtended -ne 0 ]; then       # this must be at the end
+	if [ $bExtended -ne 0 ]; then       	# this must be at the end
         displayCmd+=" $dspCmd"
     fi
 }

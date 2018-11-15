@@ -8,7 +8,7 @@
 function getOptions()
 {
 	args=$(getopt --name $script \
-	--options 'cd:ehig:kIl:mMn:N:qt:wxs:u:kv' \
+	--options 'cd:ehiIl:mMn:N:qt:wxs:u:g:kv' \
 	--longoptions 'count,help,ignore-case-grep,ignore-case-find, \
         match,no-match,query, \
 		extended,level:,directory:,name:,NAME:,type:,whole-words,ww, \
@@ -27,7 +27,7 @@ function getOptions()
 				grepOpt+='l'
 				bCount=1
 				shift ;;
-			-d | --directory) 			# get starting directory
+			-d | --directory) 			# get (one or more) starting directory
 				shift
 				if [ ! -d $1 ]; then
 					echo "invalid directory: $1"
@@ -84,7 +84,15 @@ function getOptions()
 				if [ $script = 'findgrep' ]; then
 					# match $1 in filename only (not in dirs)
 					regex="^\.?/([^/]+/)*[^/]*$1[^/]*$"
-				elif [ $script = 'findhidden' ]; then
+				elif [ $script = 'findhfiles' ]; then
+					if [ ${1#.} = ${1} ]; then
+						# argument does not start with a period
+						regex="^\.?/([^/]+/)*\.[^/]*$1[^/]*$"
+					else
+						# argument does start with a period
+						regex="^\.?/([^/]+/)*\\$1[^/]*$"
+					fi
+				elif [ $script = 'findhdirs' ]; then
 					if [ ${1#.} = ${1} ]; then
 						# argument does not start with a period
 						regex="^\.?/([^/]+/)*\.[^/]*$1[^/]*$"
@@ -111,7 +119,15 @@ function getOptions()
 				if [ $script = 'findgrep' ]; then
 					# match comlete filename (extension included)
 					regex="^.*/([^/]+/)*$1$"
-				elif [ $script = 'findhidden' ]; then
+				elif [ $script = 'findhfiles' ]; then
+					if [ ${1#.} = $1 ]; then
+						# argument does not start with a period
+						regex="^\.?/([^/]+/)*\.$1$"
+					else
+						# argument does start with a period
+						regex="^\.?/([^/]+/)*\\$1$"
+					fi
+				elif [ $script = 'findhdirs' ]; then
 					if [ ${1#.} = $1 ]; then
 						# argument does not start with a period
 						regex="^\.?/([^/]+/)*\.$1$"
@@ -123,7 +139,8 @@ function getOptions()
 											   || [ $script = 'findpipes' ]     \
 				                			   || [ $script = 'finddirs' ]      \
                  							   || [ $script = 'findfiles' ]     \
-											   || [ $script = 'findx' ]; then
+											   || [ $script = 'findx' ]			\
+											   || [ $script = 'findhdirs' ]; then
  					regex="^.*/$1.*$"
 				else
 					# start with a '/' or a './' followed by 0 or more directories
@@ -224,37 +241,47 @@ function getOptions()
 		fi
 	fi
 
-	if [ $bShowMatches -eq 1 ]; then
-		if [ $script = 'finddirs' ] || [ $script = 'findlinks' ] \
-									|| [ $script = 'findpipes' ] \
-									|| [ $script = 'findsockets' ]; then
+	if [ $bShowMatches -eq 1 ]; then	# we can't find matches in these types
+		if [ $script = 'finddirs' ] || [ $script = 'findlinks' 	 ] \
+									|| [ $script = 'findpipes' 	 ] \
+									|| [ $script = 'findsockets' ] \
+									|| [ $script = 'findgit' ]	   \
+									|| [ $script = 'findsvn' ]	   \
+									|| [ $script = 'findhdirs' ]; then
 			echo "WARNING: The --match switch cannot be used with $script."
 			doExit 192
 		fi
 	fi
 
-	if [ ! -z "$params" ]; then
-		if [ $script = 'finddirs' ] || [ $script = 'findlinks' ] \
-									|| [ $script = 'findpipes' ] \
-									|| [ $script = 'findsockets' ]; then
+	if [ ! -z "$params" ]; then	# we can't find matches in these types
+		if [ $script = 'finddirs' ] || [ $script = 'findlinks' ] 	\
+									|| [ $script = 'findpipes' ] 	\
+									|| [ $script = 'findsockets' ]	\
+									|| [ $script = 'findgit' ]		\
+									|| [ $script = 'findsvn' ]		\
+									|| [ $script = 'findhdirs' ]; then
 			echo "WARNING: You cannot search for '$params' in $script."
 			doExit 192
 		fi
 	fi
 
-	if [ $bExtended -eq 1 ] && [ $script = 'finddirs' ]; then
-		echo "WARNING: $script cannot use the --extended switch."
+	if [ $bExtended -eq 1 ]; then	# bExtended doesn't work with directories
+		if [ $script = 'finddirs' ] || [ $script = 'findgit' ]		\
+									|| [ $script = 'findsvn' ]		\
+									|| [ $script = 'findhdirs' ]; then
+			echo "WARNING: $script cannot use the --extended switch."
 			doExit 192
 		fi
+	fi
 
 	if [ -z "$dir" ]; then 
-		dir='.'		# change to $PWD to show complete (from the root) paths
+		dir='.'		# change to $PWD or / to show complete paths
 	fi
 
 	if [ ! -z "$user" ]; then			    # set user if requested
 		displayCmd+=" $user"
 	fi
-	if [ ! -z "$group" ]; then		    # set group if requested
+	if [ ! -z "$group" ]; then		    	# set group if requested
 		displayCmd+=" $group"
 	fi
 	if [ ! -z "$size" ]; then				# set size if requested
@@ -263,10 +290,10 @@ function getOptions()
 	if [ ! -z "$time" ]; then				# set time if requested
 		displayCmd+=" $time"
 	fi
-	if [ $maxDepth -ne -1 ]; then	 	# set maxDepth if requested
+	if [ $maxDepth -ne -1 ]; then	 		# set maxDepth if requested
 		displayCmd+=" -maxdepth $maxDepth"
 	fi
-	if [ $bExtended -ne 0 ]; then       # this must be at the end
+	if [ $bExtended -ne 0 ]; then       	# this must be at the end
         displayCmd+=" $dspCmd"
     fi
 }
