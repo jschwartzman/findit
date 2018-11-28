@@ -2,7 +2,7 @@
 ###############################################################################
 # file:					findgrep.sh
 # author: 			 	John Schwartzman, Forte Systems, Inc.
-# last revision:		11/14/2018
+# last revision:		11/28/2018
 #
 # search for presence of files / content in files with specific file types
 # findc, findh, findch, findcpp, findhpp, findchpp, findjava, etc.
@@ -10,8 +10,8 @@
 #
 # See case statement (getScript) for a list of symlinks and the 
 # file patterns they match.
-# Change --dir=. (default) to --dir=$PWD to show full paths
-# (i.e., /xxx/xxx/xx instead of ./xxx/xx)
+# Change --dir=$PWD (default) to --dir=. to show partial paths
+# (i.e., ./xxx/xx instead of /xxx/xxx/xx )
 #
 # Built on <<DATE_AND_OSTYPE>>.
 # The variables findCmd, regexPrefix and displayCmd have been customized 
@@ -21,7 +21,7 @@
 # other shell scripts.  They will be replaced in findgrep.sh at build time.
 ###############################################################################
 
-declare -r VERSION="0.1.2"
+declare -r VERSION="0.2.0"
 declare -r script=${0##*/}	# base regex of symbolic link
 declare regex 				# regex file pattern we're trying to match
 declare params				# string containing parameters (folllowing options)
@@ -29,30 +29,17 @@ declare ext					# regex pattern of file extension
 declare dir					# will use $PWD unless overridden with -d switch
 declare findStyle='-regex'	# use find . -regex or find . -iregex
 declare type='-type f'		# -type f(ile) is the default
-declare displayCmd			# display command
-declare grepOpt				# grep options
-declare grepCmd				# grep [-$grepOpt]
 declare fdesc				# file type description
-declare size				# file size n[b|c|k]
-declare time				# file modification time
-declare user				# file owner user
-declare group				# file owner group
-declare -i gcase=0			# case-insensitive grep
-declare -i bCount=0			# just count matching files if -c switch provided
-declare -i bShowMatches=0 	# show matching text in files
-declare -i bWholeWord=0 	# grep whole words
-declare -i maxDepth=-1 		# maxDepth (must be a positive number if used)
-declare -i bNoMatch=0		# find files without matches
-declare -i bQuery=0			# show find statement without executing
-declare -i bExtended=0		# use ls -lFh formatting
+declare errmsg				# what went wrong
 
 ##############################################################################
 # doExit(errorNumber = 0): display usage and exit with errorNumber
 ##############################################################################
 function doExit()
 {
-	usage
-	exit $1
+	errmsg=${1}
+	usage "$errmsg"
+	exit  $(($2 + 0))	# make this an integer
 }
 
 #<<USAGE>>
@@ -64,28 +51,29 @@ getScript
 getOptions "$@"
 
 # create regex from extension if it hasn't yet been defined
-if [ -z $regex ] && [ ! -z $ext ]; then
+if [[ -z $regex ]] && [[ ! -z $ext ]]; then
 	regex="^.+${ext}"
 fi
 
-if [ ! -z $regex ]; then
-	findCmd+=" $dir $type $regexPrefix $findStyle '$regex'"
+if [[ ! -z $regex ]]; then
+	findCmd+=" $dir $type $maxDepth $regexPrefix $findStyle '$regex'"
 else
-	findCmd+=" $dir $type"
+	findCmd+=" $dir $type $maxDepth"
 fi
 
 ########## determine whether we are going to use grep ##########
-if [ ${#params} -eq 0 ]; then			# if no search text was provided do not use grep
+if [[ ${#params} -eq 0 ]]; then			# if no search text was provided do not use grep
 	grepCmd=''
-	if [ $bShowMatches -eq 1 -o $gcase -eq 1 -o $bWholeWord -eq 1 -o $bNoMatch -eq 1 ]; then
-		echo "WARNING: The -i, -m, -M and -w options have no meaning without 'text to match'."
-		doExit 192
+	if [[ $bShowMatches -eq 1 ]] || 
+	   [[ $gcase -eq 1 ]] || [[ $bWholeWord -eq 1 ]] || [[ $bNoMatch -eq 1 ]]; then
+		errmsg="WARNING: The -i, -m, -M and -w options have no meaning without 'text to match'."
+		doExit "$errmsg" 192
 	fi
 else											# use grep
-	if [ $bShowMatches -eq 0 -a $bCount -eq 0 ]; then
+	if [[ $bShowMatches -eq 0 ]] && [[ $bCount -eq 0 ]]; then
 		grepOpt+='l'
 	fi
-	if [ $bNoMatch -eq 1 ]; then
+	if [[ $bNoMatch -eq 1 ]]; then
 		# the grep -L option must come after any other options
 		grepOpt+='L'
 	fi
@@ -100,45 +88,43 @@ fi
 ########## display matching files ##########
 echo
 
-if [ $bCount -eq 1 ]; then			##### display count of matches
-	if [ -z "$grepCmd" ]; then
-		if [ $bQuery -eq 1 ]; then
+if [[ $bCount -eq 1 ]]; then			##### display count of matches
+	if [[ -z "$grepCmd" ]]; then
+		if [[ $bQuery -eq 1 ]]; then
 			printf "$findCmd 2>/dev/null"
 		else
 			eval $findCmd $displayCmd 2>/dev/null | \
 				printf "Number of ${fdesc}: %d\n" $(wc -l)
 		fi
 	else
-		if [ $bQuery -eq 1 ]; then
+		if [[ $bQuery -eq 1 ]]; then
 			printf "$findCmd $displayCmd 2>/dev/null | $grepCmd '$params' 2>/dev/null"
 		else
-			declare relation # "containing" or "not containing"
-			if [ $bNoMatch -eq 1 ]; then
-				relation="not containing"
-			else
-				relation="containing"
+			declare relation="containing"	# "containing" or "not containing"
+			if [[ $bNoMatch -eq 1 ]]; then
+				relation+="not "
 			fi
 			eval $findCmd $displayCmd 2>/dev/null | xargs $grepCmd "$params" 2>/dev/null | \
 				printf "Number of ${fdesc} $relation $params: %d\n" $(wc -l)
 		fi
 	fi
 
-elif [ $bShowMatches -eq 1 ]; then		# display matching lines
-	if [ $bQuery -eq 1 ]; then
+elif [[ $bShowMatches -eq 1 ]]; then		# display matching lines
+	if [[ $bQuery -eq 1 ]]; then
 		printf "$findCmd $displayCmd 2>/dev/null | xargs $grepCmd '$params' 2>/dev/null"
 	else
 		eval $findCmd $displayCmd 2>/dev/null | xargs $grepCmd "$params" 2>/dev/null
 	fi
 
-else												# display filespecs only
+else									# display filespecs only
  	if [[ -z $grepCmd ]]; then
-		if [ $bQuery -eq 1 ]; then
+		if [[ $bQuery -eq 1 ]]; then
 			printf "$findCmd $displayCmd 2>/dev/null"
 		else
 			eval $findCmd $displayCmd 2>/dev/null
 		fi
 	else
-		if [ $bQuery -eq 1 ]; then
+		if [[ $bQuery -eq 1 ]]; then
 			printf "$findCmd $displayCmd 2>/dev/null | xargs $grepCmd '$params' 2>/dev/null"
 		else
 			eval $findCmd $displayCmd 2>/dev/null | xargs $grepCmd "$params" 2>/dev/null
@@ -147,5 +133,6 @@ else												# display filespecs only
 fi
 
 echo
+exit 0
 
 ############################## End of findgrep.sh ############################

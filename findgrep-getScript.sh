@@ -16,6 +16,14 @@ function getScript()
 		findawk)  	# find in awk/gawk files
 			ext='\.awk$'
 			fdesc='awk/gawk files' ;;
+		findblock)	# find block devices
+		    type='-type b'
+			dir+=" /"	# root directory
+			fdesc='block devices' ;;
+		findchar)	# find character devices
+		    type='-type c'
+			dir+=" /"	# root directory
+			fdesc='character devices' ;;
 		findc)    	# find in *.c files
 			ext='\.c$'
 			fdesc='c source files' ;;
@@ -55,11 +63,11 @@ function getScript()
             type='-type d'
             fdesc='directories' ;;
     	findhfiles)	# find hidden ('.*') files unless -p(attern) provided
-			regex='^.?/([^/]+/)*\.[^/]+$'
+			regex='^.+/\..+$'
 			fdesc='hidden files' ;;
     	findhdirs)   # find hidden directories
             type='-type d'
-			regex='^.*/\..*$'
+			regex='^.+\..+$'
             fdesc='hidden directories' ;;
 		findlinks)	# find all links
             type='-type l'
