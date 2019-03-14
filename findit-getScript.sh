@@ -7,11 +7,14 @@
 function getScript()
 {
 	case $script in
+		finda)		# find static library files
+			ext='\.a$'	
+			fdesc='find static library files' ;;
 		findaudio)	# find audio files
 			ext='\.(mp3|m4a|m4b|wav|aa|ogg|wma)$'
 			fdesc='audio files' ;;
-		findasm)  	# find in *.asm files
-			ext='\.asm$'
+		findasm)  	# find in *.asm or *.s files
+			ext='\.(asm|s)$'
 			fdesc='assembly language files' ;;
 		findawk)  	# find in awk/gawk files
 			ext='\.awk$'
@@ -54,28 +57,34 @@ function getScript()
 		findcss)	# find in *.css files
 			ext='\.css$'
 			fdesc='cascading style sheet files' ;;
+		finddtd)	# find in *.dtd files
+			ext='\.dtd'
+			fdesc='document type definition files' ;;
 		findit)	# find in all files
 			regex='^.+$'
 			fdesc='matching files' ;;
-        findfiles)   # find in files
+        findfile)   # find in files
             fdesc='files' ;;
-        finddirs)   # find directories
+        finddir)   # find directories
             type='-type d'
             fdesc='directories' ;;
-    	findhfiles)	# find hidden ('.*') files unless -p(attern) provided
+    	findhfile)	# find hidden ('.*') files unless -p(attern) provided
 			regex='^.+/\..+$'
 			fdesc='hidden files' ;;
-    	findhdirs)   # find hidden directories
+    	findhdir)   # find hidden directories
             type='-type d'
 			regex='^.+/\..+$'
             fdesc='hidden directories' ;;
-		findlinks)	# find links
+		findgo)		# find go files
+			ext='\.go$'
+			fdesc='go files'	;;
+		findlink)	# find links
             type='-type l'
 			fdesc='links' ;;
-        findsockets) # find sockets
+        findsocket) # find sockets
             type='-type s'
             fdesc='sockets' ;;
-        findpipes) # find pipes
+        findpipe) # find pipes
             type='-type p'
             fdesc='pipes' ;;
 		findhtml)	# find in *.htm or *.html files
@@ -103,7 +112,7 @@ function getScript()
 			ext='\.jsp$'
 			fdesc='Java Server Page files' ;;
 		findlib)	# find *.so, and *.a files
-			ext='\.(so|a)$'
+			ext='\.(so\.?.*|a)$'
 			fdesc='libraries' ;;
 		findlog)	# find in *.log files
 			ext='\.log$'
@@ -153,8 +162,8 @@ function getScript()
 		findsh)		# find in *.sh
 			ext='\.sh$'
 			fdesc='shell script files' ;;
-		findso)		# find in shared library (* . so) files
-			ext='\.so$'
+		findso)		# find in shared library files
+			ext='\.(so|so\..*)$'	# .so or .so.1.68.0
 			fdesc='shared library files' ;;
 		findspace)	# find in filenames containing spaces
 			regex='^.*/.+ +.+$'

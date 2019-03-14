@@ -1,8 +1,8 @@
 #!/bin/bash
-###############################################################################
+#############################################################################
 # file:					findit.sh
 # author: 			 	John Schwartzman, Forte Systems, Inc.
-# last revision:		12/01/2018
+# last revision:		03/14/2019
 #
 # search for presence of files / content in files with specific file types
 # findc, findh, findch, findcpp, findhpp, findchpp, findjava, etc.
@@ -19,9 +19,9 @@
 #
 # USAGE, GETSCRIPT and GETOPTION (in findit-template.sh are placeholders for
 # other shell scripts.  They will be replaced in findit.sh at build time.
-###############################################################################
+#############################################################################
 
-declare -r VERSION="0.2.0"
+declare -r VERSION="0.2.5"
 declare -r script=${0##*/}	# base regex of symbolic link
 declare regex 				# regex file pattern we're trying to match
 declare params				# string containing parameters (folllowing options)
@@ -32,12 +32,12 @@ declare type='-type f'		# -type f(ile) is the default
 declare fdesc				# file type description
 declare errmsg				# what went wrong
 
-##############################################################################
+#############################################################################
 # doExit(errorNumber = 0): display usage and exit with errorNumber
-##############################################################################
+#############################################################################
 function doExit()
 {
-	errmsg=$1
+	errmsg="$1"
 	usage "$errmsg"
 	exit  $(($2 + 0))	# make this an integer
 }
@@ -135,4 +135,4 @@ fi
 echo
 exit 0
 
-############################## End of findit.sh ##############################
+################################ End of findit ##############################

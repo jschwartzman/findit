@@ -1,7 +1,7 @@
-##############################################################################
+#############################################################################
 # getOptions()	get findit options and convert to find and grep options
 #
-##############################################################################
+#############################################################################
 
 declare displayCmd			# display command
 declare grepOpt				# grep options
@@ -25,12 +25,12 @@ declare returnValue		    # for use in this module only
 declare signValue           # for use in this module only
 declare tempFile			# for use in this module only
 
-##############################################################################
+#############################################################################
 # function isIntegerEntry()		check that user entered a valid
 #								+/- integer value (+/- is optional)
 #
 # sets returnValue = 1 if true, sets returnValue = 0 if false
-##############################################################################
+#############################################################################
 function isIntegerEntry()
 {
     if [[ $1 =~ ^[\+-]?[[:digit:]]+$ ]]; then  
@@ -40,12 +40,12 @@ function isIntegerEntry()
     fi
 }
 
-####################################################################################################
+#############################################################################
 # function isValidSize()		check that user entered a valid find file size
 #								[+/-]n [b|c|k|M|G]
 #								find does not allow a decimal point
 # sets returnValue = 1 if true, sets returnValue = 0 if false
-##############################################################################
+#############################################################################
 function isValidSize()
 {
 	if [[ $1 =~ ^[\+-]?[[:digit:]]+[bckMG]?$ ]]; then
@@ -55,10 +55,10 @@ function isValidSize()
 	fi
 }
 
-##############################################################################
+#############################################################################
 # function stripSignIfPositive()	    return the digits of the integer in
 #                                       numberVariable without the + sign
-##############################################################################
+#############################################################################
 function stripSignIfPositive()
 {
     declare tempValue=$1
@@ -74,10 +74,10 @@ function stripSignIfPositive()
    fi
 }
 
-##############################################################################
+#############################################################################
 # function stripTrailingComma()	    returns the string without a trailing
 #                                   comma in returnValue
-##############################################################################
+#############################################################################
 function stripTrailingComma()
 {
     declare tempValue=$1
@@ -89,11 +89,11 @@ function stripTrailingComma()
     fi
 }
 
-##############################################################################
+#############################################################################
 # function stripLeadingAndTrailingSpaces()		returns the string without 
 #												leading or trailing spaces
 #				                               	in returnValue
-##############################################################################
+#############################################################################
 function stripLeadingAndTrailingSpaces()
 {
     declare tempValue=$1
@@ -104,10 +104,10 @@ function stripLeadingAndTrailingSpaces()
     returnValue="$(echo -e "$tempValue" | sed -e 's/[[:space:]]*$//')"
  }
 
-###############################################################################
+#############################################################################
 # function stripTrailingSlash()		returns the string without a trailing
 #                                   '/' in returnValue
-##############################################################################
+#############################################################################
 function stripTrailingSlash()
 {
     declare tempValue=$1
@@ -123,7 +123,7 @@ function stripTrailingSlash()
 # function isValidPermission()      verify format for find -perm clause
 #									use --nopermission -a=w to elicit
 #									! - perm -a=w
-##############################################################################
+#############################################################################
 function isValidPermission()
 {
     stripSignIfPositive $1
@@ -137,14 +137,14 @@ function isValidPermission()
     stripTrailingComma $returnValue
 }
 
-##############################################################################
+#############################################################################
 # getOptions(): parse command line parameters
 #			 - after options are extracted,
 #			   command line arguments are placed in $params
 # 			 - call as getOptions "$@"
 # Get the command line options and see if they make sense together.
 # Automated error handling is disabled.
-##############################################################################
+#############################################################################
 function getOptions()
 {
 	args=$(getopt --name $script \
@@ -225,7 +225,7 @@ function getOptions()
 				shift ;;
 			-n | --name) 	# provide partial filename to match
 				shift
-				if [[ $script = 'findhfiles' ]]; then		# hidden files
+				if [[ $script = 'findhfile' ]]; then		# hidden files
 					if [[ ${1#.} = ${1} ]]; then
 						# argument does not start with a '.'
 						regex="^.+/\..*$1.*$"
@@ -233,7 +233,7 @@ function getOptions()
 						# argument does start with a period
 						regex="^.+$1.*$"
 					fi
-				elif [[ $script = 'findhdirs' ]]; then		# hidden dirs
+				elif [[ $script = 'findhdir' ]]; then		# hidden dirs
 					if [[ ${1#.} = ${1} ]]; then
 						# argument does not start with a '.'
 						regex="^.+/\..*$1.*$"
@@ -241,13 +241,15 @@ function getOptions()
 						# argument does start with a period
 						regex="^.+/$1.*$"
 					fi
+				elif [[ -z $regex ]]; then
+					regex="^.*/.*$1.*${ext}"
 				else
 					regex="^.*$1.*$"
 				fi
 				shift ;;
 			-N | --NAME) 	# provide complete filename to match
 				shift
-				if [[ $script = 'findhfiles' ]]; then		# hidden files
+				if [[ $script = 'findhfile' ]]; then		# hidden files
 					if [[ ${1#.} = ${1} ]]; then
 						# argument does not start with a period
 						regex="^.+/\.$1$"
@@ -255,7 +257,7 @@ function getOptions()
 						# argument does start with a period
 						regex="^.+/$1$"
 					fi
-				elif [[ $script = 'findhdirs' ]]; then		# hidden dirs
+				elif [[ $script = 'findhdir' ]]; then		# hidden dirs
 					if [[ ${1#.} = ${1} ]]; then
 						# argument does not start with a period
 						regex="^.+/\.$1$"
@@ -263,6 +265,8 @@ function getOptions()
 						# argument does start with a period
 						regex="^.+/$1$"
 					fi
+				elif [[ ! -z ${ext} ]]; then
+					regex="^.*/$1${ext}"
 				else
 					regex="^.*$1$"
 				fi
@@ -416,14 +420,14 @@ function getOptions()
 		fi
 	fi
 
-	if [[ $script = 'finddirs' ]] || [[ $script = 'findlinks' ]] 	\
-								  || [[ $script = 'findpipes' ]] 	\
-								  || [[ $script = 'findsockets' ]]  \
+	if [[ $script = 'finddirs' ]] || [[ $script = 'findlink' ]] 	\
+								  || [[ $script = 'findpips' ]] 	\
+								  || [[ $script = 'findsocket' ]]   \
 								  || [[ $script = 'findblock' ]]	\
 								  || [[ $script = 'findchar' ]]		\
 								  || [[ $script = 'findgit' ]]	   	\
 								  || [[ $script = 'findsvn' ]]	   	\
-								  || [[ $script = 'findhdirs' ]]; then
+								  || [[ $script = 'findhdir' ]]; then
 		if [[ ! -z $params ]]; then	# we can't find matches in these types
 			errmsg="WARNING: You cannot search for '$params' in $script."
 			doExit "$errmsg" 192
@@ -437,7 +441,7 @@ function getOptions()
 	if [[ $bExtended -eq 1 ]]; then	# bExtended doesn't work with directories
 		if [[ $script = 'finddirs' ]] || [[ $script = 'findgit' ]]		\
 									  || [[ $script = 'findsvn' ]]		\
-									  || [[ $script = 'findhdirs' ]]; then
+									  || [[ $script = 'findhdir' ]]; then
 			errmsg="WARNING: $script cannot use the --extended switch."
 			doExit "$errmsg" 192
 		fi
@@ -482,4 +486,4 @@ function getOptions()
     fi
 }
 
-##############################################################################
+#############################################################################
