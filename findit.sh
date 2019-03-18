@@ -1,8 +1,8 @@
 #!/bin/bash
-###############################################################################
+#############################################################################
 # file:					findit.sh
 # author: 			 	John Schwartzman, Forte Systems, Inc.
-# last revision:		12/01/2018
+# last revision:		03/17/2019
 #
 # search for presence of files / content in files with specific file types
 # findc, findh, findch, findcpp, findhpp, findchpp, findjava, etc.
@@ -13,15 +13,15 @@
 # Change --dir=$PWD (default) to --dir=. to show partial paths
 # (i.e., ./xxx/xx instead of /xxx/xxx/xx )
 #
-# Built on Sun Dec  2 00:40:00 EST 2018 for OSTYPE = linux-gnu.
+# Built on Sun 17 Mar 2019 09:08:40 PM EDT for OSTYPE = linux-gnu.
 # The variables findCmd, regexPrefix and displayCmd have been customized 
 # for this OS.
 #
 # USAGE, GETSCRIPT and GETOPTION (in findit-template.sh are placeholders for
 # other shell scripts.  They will be replaced in findit.sh at build time.
-###############################################################################
+#############################################################################
 
-declare -r VERSION="0.2.0"
+declare -r VERSION="0.2.6"
 declare -r script=${0##*/}	# base regex of symbolic link
 declare regex 				# regex file pattern we're trying to match
 declare params				# string containing parameters (folllowing options)
@@ -34,109 +34,112 @@ declare errmsg				# what went wrong
 declare findCmd='find'
 declare -r regexPrefix='-regextype posix-egrep'
 declare -r dspCmd='-exec ls -lhF --color {} +'
-declare -r BUILD_DATE='Sun Dec  2 00:40:00 EST 2018'
+declare -r BUILD_DATE='Sun 17 Mar 2019 09:08:40 PM EDT'
 declare -r OSTYPE='linux-gnu'
 
-##############################################################################
+#############################################################################
 # doExit(errorNumber = 0): display usage and exit with errorNumber
-##############################################################################
+#############################################################################
 function doExit()
 {
-	errmsg=$1
+	errmsg="$1"
 	usage "$errmsg"
 	exit  $(($2 + 0))	# make this an integer
 }
 
 
-##############################################################################
+#############################################################################
 # usage: display findit usage, version and alias information
 #
-##############################################################################
-##############################################################################
+#############################################################################
+#############################################################################
 # function saveAndClearScreen()
-##############################################################################
+#############################################################################
 function saveAndClearScreen()
 {
 	tput smcup	# save screen
 	clear		# clear screen
 }
 
-##############################################################################
+#############################################################################
 # function restoreScreen()
-##############################################################################
+#############################################################################
 function restoreScreen()
 {
-	tput rev		# reverse video
-	read -n1 -p "Press any key to continue..."
+    bScreenSaved=0
 	tput sgr0		# restore terminal defaults
 	tput rmcup		# restore screen
+	
+	#tput rev		# reverse video
+	#read -n1 -p "Press any key to continue..."
 }
 
-##############################################################################
+#############################################################################
 # usage(): display script usage
-##############################################################################
+#############################################################################
 function usage()
 {
-	saveAndClearScreen
-
-	if [[ ! -z $1 ]]; then
-		echo $1
+	if [[ ! -z $1 ]]; then	# display the error twice if there is one
+	 	echo $1
 	fi
 
-	cat <<-EOF
+	saveAndClearScreen
+	
+	cat <<-EOF | less --quit-at-eof
 
-USAGE: $script [OPTIONS] ['text to find']
-  The '$script' alias to 'findit' finds $fdesc.
-  -c|--count            - show count of matching files/directories
-  -d|--directory <dir> 	- use starting directory dir (default: $PWD)
-  -e|--extended         - display filespecs in 'ls -lFh' format
-  -g|--group <id>       - show files owned by group id or name
-  -h|--help             - display help
-  -i|--ignore-case-grep	- case-insensitive grep
-  -I|--ignore-case-find	- case-Insensitive find
-  -k|--context          - show 3 context lines for each match (1 before and 1 after)
-  -l|--level <maxdepth> - level must be an integer >= 1
-  -m|--match            - display matches within files (1 context line)
-  -M|--no-match         - display files without matches
-  -n|--name <filename>  - specify part of a filename to match
-  -N|--NAME <filename>	- specify an exact filename to match
-  -p|--permission       - specify permission to match (e.g., 640 or 777 or -777)
-  -q|--query            - show query without execution
-  -s|--size <[+]size>   - find files with size = [+|-]n [b|c|k|M|G]
-  -t|--type <type>     	- type = f(ile)|l(ink)|d(irectory)|p(ipe)|s(ocket)|b(lock)|c(har)
-  -u|--user <id>        - show files owned by user id or name
-  -v|--version          - display version information
-  -w|--whole-words      - match whole words
-  -x|--executable       - find executable files
-  --writable            - find writable files / directories
-  --notwritable         - find non-writable files / directories
-  --nopermission        - negate the permission to match (e.g., ! -perm /-a=r)
-  --linkto <filename>   - use with findlinks to specify what your symlinks link to
-  --minutes <[+|-]nMin> - find files with modification time of [+|-]nMin ago
-  --days <[+|-]nDays>   - find files with modification time of [+|-]nDays days ago (0=today)
-  --today               - find files that were modified in the last 24 hours (--days 0)
-  --nouser              - find files not owned by a known user
-  --nogroup             - find files not owned by a known group
-  --empty               - find empty files or directories
+	$1
+	USAGE: $script [OPTIONS] ['text to find']
+	The '$script' alias to 'findit' finds $fdesc.
+	   -c|--count            - show count of matching files/directories
+	   -d|--directory <dir> 	- use starting directory dir (default: $PWD)
+	   -e|--extended         - display filespecs in 'ls -lFh' format
+	   -g|--group <id>       - show files owned by group id or name
+       -h|--help             - display help
+	   -i|--ignore-case-grep	- case-insensitive grep
+	   -I|--ignore-case-find	- case-Insensitive find
+	   -k|--context          - show 3 context lines for each match (1 before and 1 after)
+	   -l|--level <maxdepth> - level must be an integer >= 1
+	   -m|--match            - display matches within files (1 context line)
+	   -M|--no-match         - display files without matches
+	   -n|--name <filename>  - specify part of a filename to match
+	   -N|--NAME <filename>	- specify an exact filename to match
+	   -p|--permission       - specify permission to match (e.g., 640 or 777 or -777)
+	   -q|--query            - show query without execution
+	   -s|--size <[+]size>   - find files with size = [+|-]n [b|c|k|M|G]
+	   -t|--type <type>     	- type = f(ile)|l(ink)|d(irectory)|p(ipe)|s(ocket)|b(lock)|c(har)
+	   -u|--user <id>        - show files owned by user id or name
+	   -v|--version          - display version information
+	   -w|--whole-words      - match whole words
+	   -x|--executable       - find executable files
+	   --writable            - find writable files / directories
+	   --notwritable         - find non-writable files / directories
+	   --nopermission        - negate the permission to match (e.g., ! -perm /-a=r)
+	   --linkto <filename>   - use with findlinks to specify what your symlinks link to
+	   --minutes <[+|-]nMin> - find files with modification time of [+|-]nMin ago
+	   --days <[+|-]nDays>   - find files with modification time of [+|-]nDays days ago (0=today)
+	   --today               - find files that were modified in the last 24 hours (--days 0)
+	   --nouser              - find files not owned by a known user
+	   --nogroup             - find files not owned by a known group
+	   --empty               - find empty files or directories
 
 	EOF
 
 	restoreScreen
 }
 
-##############################################################################
+#############################################################################
 # alias(): display program aliases (symbolic links to findit)
-##############################################################################
+#############################################################################
 function alias()
 {
 	saveAndClearScreen
 
-	cat <<-EOF
+	cat <<-EOF | less --quit-at-eof
 
 	FINDIT ALIASES: (use the --query option to display the exact command)
 	   finda, findso, findlib:
-	               find archive/shared object/both
-	   findasm:    find in assembly language files (*.asm)
+	               find static libraries/shared libraries/both
+	   findasm:    find in assembly language files (*.asm and *.s)
 	   findawk:    find in awk/gawk files
 	   findbak:    find in backup files (*~ and *.bak)
 	   findblock:  find block devices
@@ -149,19 +152,21 @@ function alias()
 	   findcfg:     find in configuration files (*.cfg/*.conf/*.ini)
 	   findcomp:    find compressed files (*.tar/*.gzip/*.bzip2/*.tar.gz...)
 	   findcss:     find in cascading style sheet files
-	   finddirs:    find directories (use with -n 'dirname' or -N 'dirname')
-	   findfiles:   find files (use with -n 'filename' or -N 'filename')
+	   finddir:     find directories (use with -n 'dirname' or -N 'dirname')
+	   findfile:    find files (use with -n 'filename' or -N 'filename')
 	   findit:      find all files (use with -n 'filename' or -N 'filename')
+	   finddtd:     find in document type definition files
 	   findhtml:    find in *.htm, *.html, *.css and *.js files
-	   findhfiles, findhdirs:  
+	   findhfile, findhdir:  
 	                find hidden files / directories
 	   findimg:     find image files (*.jpg, .tiff, etc.)
 	   findinc:     find in include files (*.in and *.inc)
+	   findgo:      find in go files
 	   findjava, findjar:
 	                find in Java/Java archive files
 	   findjs:      find in javascript files
 	   findjsp:     find in Java Server Page files
-	   findlinks:	find symbolic links (use with -n 'linkname' or -N 'linkname')
+	   findlink:	find symbolic links (use with -n 'linkname' or -N 'linkname')
 	   findlog:     find in *.log files
 	   findmake, findMake:
 	                find in make files (*.mk, *.mak)/'Makefile or makefile'
@@ -176,9 +181,9 @@ function alias()
 	   findrpm:     find RPM files
 	   findsh, findpl, findpy, findrb, findshell:
 	                find in sh/Perl/Python/Ruby/all shell script files
-	   findpipes:   find pipes (use with -n 'pipename' or -N 'pipename')
+	   findpipe:    find pipes (use with -n 'pipename' or -N 'pipename')
 	   findspace:   find in files containing space(s) in their filenames
-	   findsockets: find sockets Iuse with -n 'socketname' or -N 'socketname')
+	   findsocket:  find sockets Iuse with -n 'socketname' or -N 'socketname')
 	   findsvn:     find subversion directories
 	   findgit:     find git repositories
 	   findx:       find executable files
@@ -196,9 +201,9 @@ function alias()
 	restoreScreen
 }
 
-##############################################################################
+#############################################################################
 # version(): display program version, build date and os type
-##############################################################################
+#############################################################################
 function version()
 {
 	cat <<-EOF
@@ -222,11 +227,14 @@ function version()
 function getScript()
 {
 	case $script in
+		finda)		# find static library files
+			ext='\.a$'	
+			fdesc='find static library files' ;;
 		findaudio)	# find audio files
 			ext='\.(mp3|m4a|m4b|wav|aa|ogg|wma)$'
 			fdesc='audio files' ;;
-		findasm)  	# find in *.asm files
-			ext='\.asm$'
+		findasm)  	# find in *.asm or *.s files
+			ext='\.(asm|s)$'
 			fdesc='assembly language files' ;;
 		findawk)  	# find in awk/gawk files
 			ext='\.awk$'
@@ -269,28 +277,34 @@ function getScript()
 		findcss)	# find in *.css files
 			ext='\.css$'
 			fdesc='cascading style sheet files' ;;
+		finddtd)	# find in *.dtd files
+			ext='\.dtd'
+			fdesc='document type definition files' ;;
 		findit)	# find in all files
 			regex='^.+$'
 			fdesc='matching files' ;;
-        findfiles)   # find in files
+        findfile)   # find in files
             fdesc='files' ;;
-        finddirs)   # find directories
+        finddir)   # find directories
             type='-type d'
             fdesc='directories' ;;
-    	findhfiles)	# find hidden ('.*') files unless -p(attern) provided
+    	findhfile)	# find hidden ('.*') files unless -p(attern) provided
 			regex='^.+/\..+$'
 			fdesc='hidden files' ;;
-    	findhdirs)   # find hidden directories
+    	findhdir)   # find hidden directories
             type='-type d'
 			regex='^.+/\..+$'
             fdesc='hidden directories' ;;
-		findlinks)	# find links
+		findgo)		# find go files
+			ext='\.go$'
+			fdesc='go files'	;;
+		findlink)	# find links
             type='-type l'
 			fdesc='links' ;;
-        findsockets) # find sockets
+        findsocket) # find sockets
             type='-type s'
             fdesc='sockets' ;;
-        findpipes) # find pipes
+        findpipe) # find pipes
             type='-type p'
             fdesc='pipes' ;;
 		findhtml)	# find in *.htm or *.html files
@@ -318,7 +332,7 @@ function getScript()
 			ext='\.jsp$'
 			fdesc='Java Server Page files' ;;
 		findlib)	# find *.so, and *.a files
-			ext='\.(so|a)$'
+			ext='\.(so\.?.*|a)$'
 			fdesc='libraries' ;;
 		findlog)	# find in *.log files
 			ext='\.log$'
@@ -368,8 +382,8 @@ function getScript()
 		findsh)		# find in *.sh
 			ext='\.sh$'
 			fdesc='shell script files' ;;
-		findso)		# find in shared library (* . so) files
-			ext='\.so$'
+		findso)		# find in shared library files
+			ext='\.(so|so\..*)$'	# .so or .so.1.68.0
 			fdesc='shared library files' ;;
 		findspace)	# find in filenames containing spaces
 			regex='^.*/.+ +.+$'
@@ -416,10 +430,10 @@ function getScript()
 }
 
 ##############################################################################
-##############################################################################
+#############################################################################
 # getOptions()	get findit options and convert to find and grep options
 #
-##############################################################################
+#############################################################################
 
 declare displayCmd			# display command
 declare grepOpt				# grep options
@@ -443,12 +457,12 @@ declare returnValue		    # for use in this module only
 declare signValue           # for use in this module only
 declare tempFile			# for use in this module only
 
-##############################################################################
+#############################################################################
 # function isIntegerEntry()		check that user entered a valid
 #								+/- integer value (+/- is optional)
 #
 # sets returnValue = 1 if true, sets returnValue = 0 if false
-##############################################################################
+#############################################################################
 function isIntegerEntry()
 {
     if [[ $1 =~ ^[\+-]?[[:digit:]]+$ ]]; then  
@@ -458,12 +472,12 @@ function isIntegerEntry()
     fi
 }
 
-####################################################################################################
+#############################################################################
 # function isValidSize()		check that user entered a valid find file size
 #								[+/-]n [b|c|k|M|G]
 #								find does not allow a decimal point
 # sets returnValue = 1 if true, sets returnValue = 0 if false
-##############################################################################
+#############################################################################
 function isValidSize()
 {
 	if [[ $1 =~ ^[\+-]?[[:digit:]]+[bckMG]?$ ]]; then
@@ -473,10 +487,10 @@ function isValidSize()
 	fi
 }
 
-##############################################################################
+#############################################################################
 # function stripSignIfPositive()	    return the digits of the integer in
 #                                       numberVariable without the + sign
-##############################################################################
+#############################################################################
 function stripSignIfPositive()
 {
     declare tempValue=$1
@@ -492,10 +506,10 @@ function stripSignIfPositive()
    fi
 }
 
-##############################################################################
+#############################################################################
 # function stripTrailingComma()	    returns the string without a trailing
 #                                   comma in returnValue
-##############################################################################
+#############################################################################
 function stripTrailingComma()
 {
     declare tempValue=$1
@@ -507,11 +521,11 @@ function stripTrailingComma()
     fi
 }
 
-##############################################################################
+#############################################################################
 # function stripLeadingAndTrailingSpaces()		returns the string without 
 #												leading or trailing spaces
 #				                               	in returnValue
-##############################################################################
+#############################################################################
 function stripLeadingAndTrailingSpaces()
 {
     declare tempValue=$1
@@ -522,10 +536,10 @@ function stripLeadingAndTrailingSpaces()
     returnValue="$(echo -e "$tempValue" | sed -e 's/[[:space:]]*$//')"
  }
 
-###############################################################################
+#############################################################################
 # function stripTrailingSlash()		returns the string without a trailing
 #                                   '/' in returnValue
-##############################################################################
+#############################################################################
 function stripTrailingSlash()
 {
     declare tempValue=$1
@@ -541,7 +555,7 @@ function stripTrailingSlash()
 # function isValidPermission()      verify format for find -perm clause
 #									use --nopermission -a=w to elicit
 #									! - perm -a=w
-##############################################################################
+#############################################################################
 function isValidPermission()
 {
     stripSignIfPositive $1
@@ -555,14 +569,14 @@ function isValidPermission()
     stripTrailingComma $returnValue
 }
 
-##############################################################################
+#############################################################################
 # getOptions(): parse command line parameters
 #			 - after options are extracted,
 #			   command line arguments are placed in $params
 # 			 - call as getOptions "$@"
 # Get the command line options and see if they make sense together.
 # Automated error handling is disabled.
-##############################################################################
+#############################################################################
 function getOptions()
 {
 	args=$(getopt --name $script \
@@ -643,7 +657,7 @@ function getOptions()
 				shift ;;
 			-n | --name) 	# provide partial filename to match
 				shift
-				if [[ $script = 'findhfiles' ]]; then		# hidden files
+				if [[ $script = 'findhfile' ]]; then		# hidden files
 					if [[ ${1#.} = ${1} ]]; then
 						# argument does not start with a '.'
 						regex="^.+/\..*$1.*$"
@@ -651,7 +665,7 @@ function getOptions()
 						# argument does start with a period
 						regex="^.+$1.*$"
 					fi
-				elif [[ $script = 'findhdirs' ]]; then		# hidden dirs
+				elif [[ $script = 'findhdir' ]]; then		# hidden dirs
 					if [[ ${1#.} = ${1} ]]; then
 						# argument does not start with a '.'
 						regex="^.+/\..*$1.*$"
@@ -659,13 +673,15 @@ function getOptions()
 						# argument does start with a period
 						regex="^.+/$1.*$"
 					fi
+				elif [[ -z $regex ]]; then
+					regex="^.*/.*$1.*${ext}"
 				else
 					regex="^.*$1.*$"
 				fi
 				shift ;;
 			-N | --NAME) 	# provide complete filename to match
 				shift
-				if [[ $script = 'findhfiles' ]]; then		# hidden files
+				if [[ $script = 'findhfile' ]]; then		# hidden files
 					if [[ ${1#.} = ${1} ]]; then
 						# argument does not start with a period
 						regex="^.+/\.$1$"
@@ -673,7 +689,7 @@ function getOptions()
 						# argument does start with a period
 						regex="^.+/$1$"
 					fi
-				elif [[ $script = 'findhdirs' ]]; then		# hidden dirs
+				elif [[ $script = 'findhdir' ]]; then		# hidden dirs
 					if [[ ${1#.} = ${1} ]]; then
 						# argument does not start with a period
 						regex="^.+/\.$1$"
@@ -681,6 +697,8 @@ function getOptions()
 						# argument does start with a period
 						regex="^.+/$1$"
 					fi
+				elif [[ ! -z ${ext} ]]; then
+					regex="^.*/$1${ext}"
 				else
 					regex="^.*$1$"
 				fi
@@ -834,14 +852,14 @@ function getOptions()
 		fi
 	fi
 
-	if [[ $script = 'finddirs' ]] || [[ $script = 'findlinks' ]] 	\
-								  || [[ $script = 'findpipes' ]] 	\
-								  || [[ $script = 'findsockets' ]]  \
+	if [[ $script = 'finddirs' ]] || [[ $script = 'findlink' ]] 	\
+								  || [[ $script = 'findpips' ]] 	\
+								  || [[ $script = 'findsocket' ]]   \
 								  || [[ $script = 'findblock' ]]	\
 								  || [[ $script = 'findchar' ]]		\
 								  || [[ $script = 'findgit' ]]	   	\
 								  || [[ $script = 'findsvn' ]]	   	\
-								  || [[ $script = 'findhdirs' ]]; then
+								  || [[ $script = 'findhdir' ]]; then
 		if [[ ! -z $params ]]; then	# we can't find matches in these types
 			errmsg="WARNING: You cannot search for '$params' in $script."
 			doExit "$errmsg" 192
@@ -855,7 +873,7 @@ function getOptions()
 	if [[ $bExtended -eq 1 ]]; then	# bExtended doesn't work with directories
 		if [[ $script = 'finddirs' ]] || [[ $script = 'findgit' ]]		\
 									  || [[ $script = 'findsvn' ]]		\
-									  || [[ $script = 'findhdirs' ]]; then
+									  || [[ $script = 'findhdir' ]]; then
 			errmsg="WARNING: $script cannot use the --extended switch."
 			doExit "$errmsg" 192
 		fi
@@ -900,7 +918,7 @@ function getOptions()
     fi
 }
 
-##############################################################################
+#############################################################################
 
 ########## begin program execution ##########
 getScript
@@ -991,4 +1009,4 @@ fi
 echo
 exit 0
 
-############################## End of findit.sh ##############################
+################################ End of findit ##############################
