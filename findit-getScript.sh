@@ -129,8 +129,8 @@ function getScript()
 		findodt)	# find .odt files
 			ext='\.odt$'
 			fdesc='OpenOffice (*.odt) files' ;;
-		findobj)	# find in object (*.o, *.os and *. og) files
-			ext='\.o[sg]?$'
+		findobj)	# find in object (*.o and *.obj) files
+			ext='\.(o|obj)$'
 			fdesc='object files' ;;
 		findogg)	# find in .ogg files
 			ext='\.ogg$'
