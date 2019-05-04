@@ -123,7 +123,7 @@ function alias()
 	   findmp3, findogg, findwav, findaudio:
 	                find *.mp3/*.ogg/*.wav/all audio files
 	   findnoext:   find in files with no filename extension
-	   findobj:     find object files (*.o, *.os and *.og)
+	   findobj:     find object files (*.o and *.obj)
 	   findpdf:     find PDF files
 	   findphp:     find in PHP files
 	   findorig:    find in *.orig files(result of merge)
