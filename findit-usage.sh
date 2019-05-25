@@ -19,9 +19,6 @@ function restoreScreen()
     bScreenSaved=0
 	tput sgr0		# restore terminal defaults
 	tput rmcup		# restore screen
-	
-	#tput rev		# reverse video
-	#read -n1 -p "Press any key to continue..."
 }
 
 #############################################################################
@@ -117,6 +114,7 @@ function alias()
 	   findjs:      find in javascript files
 	   findjsp:     find in Java Server Page files
 	   findlink:	find symbolic links (use with -n 'linkname' or -N 'linkname')
+	   findlst:		find in *.lst files
 	   findlog:     find in *.log files
 	   findmake, findMake:
 	                find in make files (*.mk, *.mak)/'Makefile or makefile'

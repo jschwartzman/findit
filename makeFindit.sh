@@ -1,11 +1,11 @@
 #!/bin/bash
 #############################################################################
 # file: 			makeFindit. sh - remove and recreate findit and
-#					symbolic links to findit in /usr/local/bin
+#					symbolic links to findit in /usr/bin
 #                   This builds and deploys or removes the findit
 #                   application and all of its symbolic links.
 # author:			John Schwartzman, Forte Systems, Inc.
-# last revision:	03/17/2019
+# last revision:	05/06/2019
 #############################################################################
 
 set -o errexit			# exit if any statement returns non-true value
@@ -15,7 +15,7 @@ declare findCmd='find'
 declare regexPrefix
 declare dspCmd
 declare -i nCount=0;
-declare -r BINDIR="/usr/local/bin"
+declare -r BINDIR="/usr/bin"
 declare -r buildDate=$(date)
 declare -r SHSCRIPT="findit"
 declare -r TEMPLATE_FILE="${SHSCRIPT}-template.sh"
@@ -31,7 +31,7 @@ declare -r FILES="finda findasm findawk findc findh findch 			\
 				  findinc findjava findjar findfile					\
 				  findmake findMake	findlink finddir				\
 				  findmp3 findwav findogg findhdir					\
-				  findnoext	findlog	findobj	findodt	                \
+				  findnoext	findlst findlog	findobj	findodt	        \
 				  findpdf findphp findrdme findrpm					\
 				  findsh findpl findpy findrb findshell				\
 				  finda findso findlib findspace					\
@@ -123,7 +123,7 @@ function removeFindit()
 {
 	### DELETE all old find* symbolic link files in this directory ##########
 	echo "--Deleting old symbolic links to findit in $BINDIR"
-	find /usr/local/bin -type l -lname findit -exec rm {} +
+	find $BINDIR -type l -lname findit -exec rm {} +
 	echo "--Deleting old $BINDIR/$SHSCRIPT"
 	rm -f $BINDIR/$SHSCRIPT    # REMOVE the old findit in BINDIR
 }
@@ -131,7 +131,7 @@ function removeFindit()
 ################################## copyFindit ###############################
 function copyFindit()
 {
-	# COPY findit.sh to /usr/local/bin and make it readable and executable ##
+	# COPY findit.sh to $BINDIR and make it readable and executable ##
 	echo "--Copying $DEVDIR/$SHSCRIPT.sh to $BINDIR/$SHSCRIPT"
 	cp -f $DEVDIR/$SHSCRIPT.sh $BINDIR/$SHSCRIPT
 	echo "--Making $BINDIR/$SHSCRIPT readable and executable for everyone"

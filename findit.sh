@@ -2,7 +2,7 @@
 #############################################################################
 # file:					findit.sh
 # author: 			 	John Schwartzman, Forte Systems, Inc.
-# last revision:		03/17/2019
+# last revision:		04/09/2019
 #
 # search for presence of files / content in files with specific file types
 # findc, findh, findch, findcpp, findhpp, findchpp, findjava, etc.
@@ -13,7 +13,7 @@
 # Change --dir=$PWD (default) to --dir=. to show partial paths
 # (i.e., ./xxx/xx instead of /xxx/xxx/xx )
 #
-# Built on Sun 17 Mar 2019 09:08:40 PM EDT for OSTYPE = linux-gnu.
+# Built on Mon 06 May 2019 11:37:10 PM EDT for OSTYPE = linux-gnu.
 # The variables findCmd, regexPrefix and displayCmd have been customized 
 # for this OS.
 #
@@ -34,7 +34,7 @@ declare errmsg				# what went wrong
 declare findCmd='find'
 declare -r regexPrefix='-regextype posix-egrep'
 declare -r dspCmd='-exec ls -lhF --color {} +'
-declare -r BUILD_DATE='Sun 17 Mar 2019 09:08:40 PM EDT'
+declare -r BUILD_DATE='Mon 06 May 2019 11:37:10 PM EDT'
 declare -r OSTYPE='linux-gnu'
 
 #############################################################################
@@ -69,9 +69,6 @@ function restoreScreen()
     bScreenSaved=0
 	tput sgr0		# restore terminal defaults
 	tput rmcup		# restore screen
-	
-	#tput rev		# reverse video
-	#read -n1 -p "Press any key to continue..."
 }
 
 #############################################################################
@@ -167,13 +164,14 @@ function alias()
 	   findjs:      find in javascript files
 	   findjsp:     find in Java Server Page files
 	   findlink:	find symbolic links (use with -n 'linkname' or -N 'linkname')
+	   findlst:		find in *.lst files
 	   findlog:     find in *.log files
 	   findmake, findMake:
 	                find in make files (*.mk, *.mak)/'Makefile or makefile'
 	   findmp3, findogg, findwav, findaudio:
 	                find *.mp3/*.ogg/*.wav/all audio files
 	   findnoext:   find in files with no filename extension
-	   findobj:     find object files (*.o, *.os and *.og)
+	   findobj:     find object files (*.o and *.obj)
 	   findpdf:     find PDF files
 	   findphp:     find in PHP files
 	   findorig:    find in *.orig files(result of merge)
@@ -334,6 +332,9 @@ function getScript()
 		findlib)	# find *.so, and *.a files
 			ext='\.(so\.?.*|a)$'
 			fdesc='libraries' ;;
+		findlst)	# find *.lst files
+			ext='\.lst$'
+			fdesc='list files' ;;
 		findlog)	# find in *.log files
 			ext='\.log$'
 			fdesc='log files' ;;
@@ -349,8 +350,8 @@ function getScript()
 		findodt)	# find .odt files
 			ext='\.odt$'
 			fdesc='OpenOffice (*.odt) files' ;;
-		findobj)	# find in object (*.o, *.os and *. og) files
-			ext='\.o[sg]?$'
+		findobj)	# find in object (*.o and *.obj) files
+			ext='\.(o|obj)$'
 			fdesc='object files' ;;
 		findogg)	# find in .ogg files
 			ext='\.ogg$'

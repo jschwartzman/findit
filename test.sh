@@ -253,7 +253,7 @@ echo "isValidSize returns $returnValue"
 echo
 
 fileName='findgrep'
-dirName='    /usr/local/bin/    '
+dirName='    /usr/bin/    '
 if [[ ! -e $fileName ]]; then
     stripLeadingAndTrailingSpaces "$dirName"
     echo "dirName after strip: '$returnValue'"

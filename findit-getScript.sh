@@ -114,6 +114,9 @@ function getScript()
 		findlib)	# find *.so, and *.a files
 			ext='\.(so\.?.*|a)$'
 			fdesc='libraries' ;;
+		findlst)	# find *.lst files
+			ext='\.lst$'
+			fdesc='list files' ;;
 		findlog)	# find in *.log files
 			ext='\.log$'
 			fdesc='log files' ;;

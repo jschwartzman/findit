@@ -1,12 +1,12 @@
 #############################################################################
 # file:				Makefile - for Findit Project
 # author: 			John Schwartzman, Forte Systems, Inc.
-# last revision:  	03/17/2019
+# last revision:  	04/09/2019
 #############################################################################
 
 MAKE_FILE		=	Makefile
 MAKE_CMD		=	makeFindit.sh
-BINDIR			=	/usr/local/bin
+BINDIR			=	/usr/bin
 SHELL_SCRIPT	=	findit
 TEMPLATE_FILE	=	$(SHELL_SCRIPT)-template.sh
 USAGE_FILE		=	$(SHELL_SCRIPT)-usage.sh

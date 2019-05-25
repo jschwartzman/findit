@@ -2,7 +2,7 @@
 #############################################################################
 # file:					findit.sh
 # author: 			 	John Schwartzman, Forte Systems, Inc.
-# last revision:		03/17/2019
+# last revision:		04/09/2019
 #
 # search for presence of files / content in files with specific file types
 # findc, findh, findch, findcpp, findhpp, findchpp, findjava, etc.
