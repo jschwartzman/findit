@@ -7,4 +7,4 @@ findgit finds git repositories. findh finds header (*.h) files and will search f
 The program can be built by copying the files included here to a local directory and running sudo make.  Type findit 
 --help or any alias name with --help to see the program's aliases and options.
 
-Findit is documented in the June 2018 issue of Linux Format Magazine.
+Findit is documented in the June 2018 issue of Linux Format Magazine (LXF250).
